@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{client.detail.title}">Деталі клієнта | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --card: #FFFFFF;
+            --text: #1F2937;
+            --border: #E5E7EB;
+        }
+
+        [data-theme="dark"] {
+            --bg: #111827;
+            --card: #1F2937;
+            --text: #F9FAFB;
+            --border: #374151;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: 0.3s;
+        }
+
+        .profile-card {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .avatar { font-size: 5rem; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        h2 { color: var(--primary); margin-bottom: 25px; font-weight: 600; }
+
+        .info { text-align: left; margin-bottom: 35px; line-height: 2; border-top: 1px solid var(--border); padding-top: 20px; }
+        .info p { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .label { color: var(--primary); font-weight: 500; }
+
+        .back-btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            transition: 0.3s;
+            font-weight: 500;
+        }
+        .back-btn:hover { transform: scale(1.05); opacity: 0.9; }
+    </style>
+</head>
+<body>
+<div class="profile-card">
+    <div class="avatar">👤</div>
+    <h2 th:text="${client.name}">Ім'я</h2>
+
+    <div class="info">
+        <p>
+            <span class="label" th:text="#{client.label.email} + ':'">Email:</span>
+            <span th:text="${client.email}"></span>
+        </p>
+        <p>
+            <span class="label" th:text="#{client.label.balance} + ':'">Баланс:</span>
+            <span th:text="${client.balance} + ' ₴'" style="color: #10B981; font-weight: bold;"></span>
+        </p>
+    </div>
+
+    <a th:href="@{/clients}" class="back-btn" th:text="#{client.btn.back}">← Повернутися</a>
+</div>
+
+<script>
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+</body>
+</html>

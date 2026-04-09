@@ -14,12 +14,13 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class BookDTO {
 
+    private Long id;
+
     @NotBlank(message = "Назва книги не може бути порожньою")
     private String name;
 
     private String genre;
 
-    // Змінено тип зі String на оригінальний Enum
     private AgeGroup ageGroup;
 
     @NotNull(message = "Ціна є обов'язковою")
@@ -40,4 +41,6 @@ public class BookDTO {
     private String description;
 
     private Language language;
+
+    private Integer stockQuantity;
 }

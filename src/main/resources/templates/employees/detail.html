@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{employee.detail.title}">Профіль працівника | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --accent-green: #10B981;
+        }
+
+        /* Поддержка темной темы согласно твоему дизайну */
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: 0.3s;
+        }
+
+        .profile-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-top: 6px solid var(--accent-green);
+        }
+
+        .avatar { font-size: 5rem; margin-bottom: 15px; }
+
+        h2 { color: var(--text-main); margin-bottom: 8px; font-weight: 600; }
+
+        .badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-box {
+            text-align: left;
+            margin-bottom: 35px;
+            line-height: 2;
+            color: var(--text-main);
+            background: var(--bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-item { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 5px 0; }
+        .info-item:last-child { border-bottom: none; }
+        .info-label { color: var(--text-muted); font-size: 0.9rem; }
+        .info-value { font-weight: 500; }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        .back-btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+    </style>
+</head>
+<body>
+
+<div class="profile-card">
+    <div class="avatar">👔</div>
+    <h2 th:text="${employee.name}">Ім'я</h2>
+    <div class="badge" th:text="#{employee.detail.badge}">Працівник</div>
+
+    <div class="info-box">
+        <div class="info-item">
+            <span class="info-label" th:text="#{employee.label.email}">Email</span>
+            <span class="info-value" th:text="${employee.email}"></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label" th:text="#{employee.label.phone}">Телефон</span>
+            <span class="info-value" th:text="${employee.phone ?: #messages.msg('employee.detail.not_specified')}"></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label" th:text="#{employee.label.birthday}">Дата народження</span>
+            <span class="info-value" th:text="${employee.birthDate ?: #messages.msg('employee.detail.not_specified')}"></span>
+        </div>
+    </div>
+
+    <a th:href="@{/employees}" class="back-btn">
+        <span th:text="#{employee.detail.back}">← До списку персоналу</span>
+    </a>
+</div>
+
+<script>
+    // Поддержка темной темы
+    if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+</script>
+</body>
+</html>

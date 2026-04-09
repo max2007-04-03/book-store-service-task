@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{menu.orders}">Замовлення | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5; --bg: #F3F4F6; --card: #FFFFFF;
+            --text: #1F2937; --muted: #6B7280; --border: #E5E7EB;
+        }
+        [data-theme="dark"] {
+            --bg: #111827; --card: #1F2937; --text: #F9FAFB; --muted: #9CA3AF; --border: #374151;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); display: flex; min-height: 100vh; transition: 0.3s; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px; background: var(--card); border-right: 1px solid var(--border);
+            padding: 25px 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+        }
+        .logo {
+            font-size: 1.6rem; font-weight: 800; text-decoration: none; padding: 0 25px; margin-bottom: 40px;
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1.5px;
+        }
+        .nav-link {
+            display: flex; align-items: center; gap: 15px; padding: 14px 25px;
+            color: var(--muted); text-decoration: none; font-weight: 500; transition: 0.2s; border-left: 4px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary); background: rgba(79, 70, 229, 0.1); border-left-color: var(--primary);
+        }
+        .nav-link i { font-style: normal; font-size: 1.2rem; }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 40px 5%; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+
+        /* Table Styling */
+        .table-container {
+            background: var(--card); border-radius: 20px; border: 1px solid var(--border);
+            overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: rgba(79, 70, 229, 0.05); text-align: left; padding: 18px 25px;
+            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+        }
+        td { padding: 20px 25px; border-top: 1px solid var(--border); font-size: 0.95rem; }
+
+        .status-badge {
+            padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;
+        }
+        .status-paid { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+        .status-shipped { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+
+        .btn-ship {
+            background: var(--primary); color: white; border: none; padding: 8px 16px;
+            border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s;
+        }
+        .btn-ship:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+
+        .price { font-weight: 800; color: #10B981; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+    <nav>
+        <a th:href="@{/home}" class="nav-link"><i>🏠</i> <span th:text="#{nav.home}">Головна</span></a>
+        <a th:href="@{/books}" class="nav-link"><i>📖</i> <span th:text="#{menu.books}">Книги</span></a>
+        <a th:href="@{/clients}" class="nav-link" sec:authorize="hasRole('EMPLOYEE')"><i>👥</i> <span th:text="#{menu.clients}">Клієнти</span></a>
+        <a th:href="@{/employees}" class="nav-link" sec:authorize="hasRole('EMPLOYEE')"><i>👔</i> <span th:text="#{menu.employees}">Працівники</span></a>
+        <a th:href="@{/orders/employee/{email}(email=${#authentication.name})}" class="nav-link active"><i>🛒</i> <span th:text="#{menu.orders}">Замовлення</span></a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="header">
+        <h1 th:text="#{menu.orders}">Всі замовлення</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="display: flex; gap: 10px;">
+                <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇦</a>
+                <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇸</a>
+            </div>
+            <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.4rem;">🌓</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th># Номер</th>
+                <th>Дата</th>
+                <th>Клієнт</th>
+                <th>Товари</th>
+                <th>Сума</th>
+                <th>Статус</th>
+                <th>Дія</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="order : ${orders}">
+                <td style="font-weight: 600;" th:text="'#' + ${order.orderNumber}">#000000</td>
+                <td th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}">01.01.2026</td>
+                <td th:text="${order.clientEmail}">client@mail.com</td>
+                <td>
+                    <div th:each="item : ${order.bookItems}">
+                        <span th:text="${item.bookName}">Назва</span> (x<span th:text="${item.quantity}">1</span>)
+                    </div>
+                </td>
+                <td class="price" th:text="${order.price} + ' ₴'">0.00 ₴</td>
+                <td>
+                        <span th:class="'status-badge ' + (${order.status.name() == 'PAID'} ? 'status-paid' : 'status-shipped')"
+                              th:text="${order.status.name() == 'PAID' ? 'Оплачено' : 'Відправлено'}">Статус</span>
+                </td>
+                <td>
+                    <form th:if="${order.status.name() == 'PAID'}" th:action="@{/orders/{id}/ship(id=${order.id})}" method="post">
+                        <button type="submit" class="btn-ship">🚀 Відправити</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.setAttribute('data-theme', savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+</script>
+</body>
+</html>

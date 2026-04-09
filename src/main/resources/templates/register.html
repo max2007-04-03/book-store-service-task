@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{register.title}">Реєстрація | BookStore</title>
+    <style>
+        :root { --primary-color: #4F46E5; --primary-hover: #4338CA; --bg-color: #F3F4F6; --card-bg: #FFFFFF; --text-main: #1F2937; --text-muted: #6B7280; --border-color: #D1D5DB; --input-bg: #FFFFFF; }
+        [data-theme="dark"] { --bg-color: #111827; --card-bg: #1F2937; --text-main: #F9FAFB; --text-muted: #9CA3AF; --border-color: #374151; --input-bg: #374151; }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; transition: 0.3s; }
+
+        .top-nav { position: absolute; top: 20px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
+        .nav-item { text-decoration: none; color: var(--text-main); font-weight: 500; background: var(--card-bg); padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .lang-links a { text-decoration: none; color: var(--primary-color); font-weight: 700; margin-left: 10px; }
+
+        .card { background: var(--card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; border: 1px solid var(--border-color); text-align: center; }
+        h2 { margin-bottom: 25px; color: var(--primary-color); }
+
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 8px; background: var(--input-bg); color: var(--text-main); box-sizing: border-box; transition: 0.2s;
+        }
+        input:focus { border-color: var(--primary-color); outline: none; }
+
+        /* Стиль для помилок валідації */
+        .error-text {
+            color: #EF4444;
+            font-size: 0.8rem;
+            text-align: left;
+            margin-top: -12px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .role-selector { display: flex; gap: 15px; margin-bottom: 15px; }
+        .role-option { flex: 1; cursor: pointer; }
+        .role-option input[type="radio"] { display: none; }
+        .role-box { padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-muted); font-weight: 600; transition: 0.2s; background: var(--input-bg); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .role-option input[type="radio"]:checked + .role-box { border-color: var(--primary-color); color: var(--primary-color); background: rgba(79, 70, 229, 0.1); }
+
+        #serviceCodeContainer { display: none; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        button[type="submit"] { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; margin-top: 10px; }
+        button[type="submit"]:hover { background: var(--primary-hover); }
+
+        .footer-link { display: block; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
+        .footer-link span { color: var(--primary-color); font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <a th:href="@{/home}" class="nav-item"> <span th:text="#{login.btn.home}">На головну</span></a>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="lang-links">
+            <a th:href="@{''(lang='uk')}">UA</a>
+            <a th:href="@{''(lang='en')}">US</a>
+        </div>
+        <button id="theme-toggle" class="nav-item">🌓</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 th:text="#{register.header}">Реєстрація</h2>
+
+    <div th:if="${error}" style="background: #FEE2E2; color: #B91C1C; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;">
+        <span th:text="${error}"></span>
+    </div>
+
+    <form th:action="@{/register}" th:object="${user}" method="post">
+        <input type="text" th:field="*{name}" th:placeholder="#{register.placeholder.name}" required>
+        <span class="error-text" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+
+        <input type="email" th:field="*{email}" th:placeholder="#{register.placeholder.email}" required>
+        <span class="error-text" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+
+        <input type="password" th:field="*{password}" th:placeholder="#{register.placeholder.password}" required>
+        <span class="error-text" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+
+        <div class="role-selector">
+            <label class="role-option">
+                <input type="radio" name="role" value="CLIENT" checked onchange="toggleServiceCode()">
+                <div class="role-box">👤 Клієнт</div>
+            </label>
+            <label class="role-option">
+                <input type="radio" name="role" value="EMPLOYEE" onchange="toggleServiceCode()">
+                <div class="role-box">💼 Працівник</div>
+            </label>
+        </div>
+
+        <div id="serviceCodeContainer">
+            <input type="text" id="serviceCodeInput" name="serviceCode" placeholder="Службовий код (WORK-2026)" style="margin-bottom: 15px;">
+        </div>
+
+        <button type="submit" th:text="#{register.btn.submit}">Створити акаунт</button>
+    </form>
+
+    <a th:href="@{/login}" class="footer-link">
+        <span th:text="#{register.link.login}">Увійти</span>
+    </a>
+</div>
+
+<script>
+    const toggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    if(localStorage.getItem('theme') === 'dark') html.setAttribute('data-theme', 'dark');
+    toggle.addEventListener('click', () => {
+        let theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    });
+
+    function toggleServiceCode() {
+        const employeeRadio = document.querySelector('input[name="role"][value="EMPLOYEE"]');
+        const container = document.getElementById('serviceCodeContainer');
+        const input = document.getElementById('serviceCodeInput');
+
+        if (employeeRadio.checked) {
+            container.style.display = 'block';
+            input.required = true;
+        } else {
+            container.style.display = 'none';
+            input.required = false;
+            input.value = '';
+        }
+    }
+    toggleServiceCode();
+</script>
+</body>
+</html>

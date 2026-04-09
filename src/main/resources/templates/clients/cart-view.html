@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{cart.client.title}">Кошик клієнта | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4F46E5; --bg: #F3F4F6; --card: #FFFFFF; --text: #1F2937; --border: #E5E7EB; }
+        [data-theme="dark"] { --bg: #111827; --card: #1F2937; --text: #F9FAFB; --border: #374151; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); color: var(--text); transition: 0.3s; min-height: 100vh; }
+
+        nav { background: var(--card); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .logo {
+            font-size: 1.6rem; font-weight: 800; text-decoration: none;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        main { padding: 40px 5%; max-width: 900px; margin: 0 auto; }
+        .cart-card { background: var(--card); border-radius: 24px; padding: 40px; border: 1px solid var(--border); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+        h2 { margin-bottom: 25px; font-weight: 800; font-size: 1.8rem; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border); color: var(--primary); font-size: 0.9rem; font-weight: 700; text-transform: uppercase; }
+        td { padding: 20px 15px; border-bottom: 1px solid var(--border); font-weight: 500; }
+
+        .price-val { color: var(--primary); font-weight: 700; }
+        .qty-badge { background: rgba(79, 70, 229, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 12px; font-weight: 700; }
+
+        .empty-msg { text-align: center; padding: 60px; color: var(--text-muted); }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 8px; color: var(--primary);
+            text-decoration: none; font-weight: 600; transition: 0.3s;
+        }
+        .btn-back:hover { opacity: 0.8; transform: translateX(-5px); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+    <a th:href="@{/clients}" class="btn-back">← <span th:text="#{client.btn.back}">Повернутися до клієнтів</span></a>
+</nav>
+
+<main>
+    <div class="cart-card">
+        <h2 th:text="#{cart.client.header} + ' ' + ${clientEmail}">Кошик клієнта</h2>
+
+        <div th:if="${not #lists.isEmpty(cartItems)}">
+            <table>
+                <thead>
+                <tr>
+                    <th th:text="#{cart.client.table.name}">Книга</th>
+                    <th th:text="#{cart.client.table.price}">Ціна</th>
+                    <th th:text="#{cart.client.table.quantity}">Кількість</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${cartItems}">
+                    <td th:text="${item.bookName}">Назва книги</td>
+                    <td class="price-val"><span th:text="${item.price}">0.00</span> ₴</td>
+                    <td><span class="qty-badge" th:text="${item.quantity}">1</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${#lists.isEmpty(cartItems)}" class="empty-msg">
+            <p th:text="#{cart.client.empty}">Кошик цього клієнта зараз порожній</p>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Автоматичне застосування теми
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+</body>
+</html>

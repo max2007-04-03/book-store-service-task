@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{hero.title}">Головне меню | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: 0.3s;
+        }
+
+        nav {
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1.5px;
+            transition: 0.3s ease;
+        }
+
+        .nav-links { display: flex; gap: 15px; align-items: center; }
+
+        .nav-btn {
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: 0.3s;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .btn-login { color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-register { background-color: var(--primary-color); color: white; }
+        .logout-btn { background-color: #EF4444; color: white; }
+
+        #theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Контейнер для сповіщень у кутку */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            border-left: 5px solid #4F46E5;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            animation: slideIn 0.5s ease-out forwards;
+            transition: 0.5s;
+        }
+
+        /* Анімація появи */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Анімація зникнення */
+        .toast.hide {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .toast-icon { font-size: 1.4rem; }
+        .toast-content b { color: var(--primary-color); }
+
+        main { flex: 1; padding: 40px 5%; display: flex; flex-direction: column; align-items: center; }
+
+        .notification-area { width: 100%; max-width: 800px; margin-bottom: 20px; }
+
+        .info-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px 20px;
+            border-left: 5px solid #4F46E5;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero { text-align: center; margin-bottom: 50px; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 800; }
+
+        .dashboard-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .menu-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: 0.3s;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            flex: 0 1 260px;
+        }
+
+        .menu-card:hover { transform: translateY(-5px); border-color: var(--primary-color); box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); }
+        .card-icon { font-size: 3rem; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+
+    <div class="nav-links">
+        <div style="display: flex; gap: 8px; margin-right: 10px;">
+            <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.2rem;">🇺🇦</a>
+            <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.2rem;">🇺🇸</a>
+        </div>
+
+        <button id="theme-toggle">🌓</button>
+
+        <div sec:authorize="!isAuthenticated()" style="display: flex; gap: 10px;">
+            <a th:href="@{/login}" class="nav-btn btn-login" th:text="#{auth.login}">Увійти</a>
+            <a th:href="@{/register}" class="nav-btn btn-register" th:text="#{auth.register}">Реєстрація</a>
+        </div>
+
+        <div sec:authorize="isAuthenticated()" style="display: flex; align-items: center; gap: 15px;">
+            <div style="text-align: right; line-height: 1.2;">
+                <div th:text="${#authentication.name}" style="font-weight: 600; font-size: 0.9rem;">Email</div>
+                <div style="font-size: 0.7rem; color: var(--primary-color); text-transform: uppercase;"
+                     th:text="${#authentication.authorities[0].authority.replace('ROLE_', '')}">ROLE</div>
+            </div>
+
+            <a th:href="@{/cart}" sec:authorize="hasRole('CLIENT')" class="nav-btn"
+               style="background: #10B981; color: white;">🛒 Кошик</a>
+
+            <a th:href="@{/profile}" sec:authorize="hasRole('CLIENT')" class="nav-btn"
+               style="background: var(--primary-color); color: white;" th:text="#{nav.cabinet}">Мій кабінет</a>
+
+            <form th:action="@{/logout}" method="post" style="margin: 0;">
+                <button type="submit" class="nav-btn logout-btn" th:text="#{nav.logout}">Вийти</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<main>
+    <div class="toast-container" id="toast-container">
+        <div th:each="order : ${orders}" th:if="${order.status.name() == 'SHIPPED'}" class="toast">
+            <div class="toast-icon">🚀</div>
+            <div class="toast-content">
+                <span th:text="#{notification.title}">Сповіщення</span>:
+                <span th:text="#{notification.message(${order.orderNumber})}">Замовлення відправлено</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero">
+        <h1 th:text="#{hero.title}">Система управління магазином</h1>
+        <p th:text="#{hero.subtitle}">Оберіть розділ для роботи з даними</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <a th:href="@{/books}" class="menu-card">
+            <div class="card-icon">📖</div>
+            <h3 th:text="#{menu.books}">Книги</h3>
+            <p th:text="#{menu.books.desc}">Каталог та редагування</p>
+        </a>
+
+        <a th:href="@{/clients}" class="menu-card" sec:authorize="hasRole('EMPLOYEE')">
+            <div class="card-icon">👥</div>
+            <h3 th:text="#{menu.clients}">Клієнти</h3>
+            <p th:text="#{menu.clients.desc}">Управління базою клієнтів</p>
+        </a>
+
+        <a th:href="@{/employees}" class="menu-card" sec:authorize="hasRole('EMPLOYEE')">
+            <div class="card-icon">👔</div>
+            <h3 th:text="#{menu.employees}">Працівники</h3>
+            <p th:text="#{menu.employees.desc}">Персонал магазину</p>
+        </a>
+
+        <a th:href="@{/orders/employee/{email}(email=${#authentication.name})}" class="menu-card" sec:authorize="hasRole('EMPLOYEE')">
+            <div class="card-icon">🛒</div>
+            <h3 th:text="#{menu.orders}">Всі Замовлення</h3>
+            <p th:text="#{menu.orders.desc}">Обробка замовлень</p>
+        </a>
+    </div>
+</main>
+
+<script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.setAttribute('data-theme', savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach((toast, index) => {
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 500); // Видаляємо з DOM після анімації
+            }, 5000 + (index * 1000));
+        });
+    });
+</script>
+
+
+
+</body>
+</html>

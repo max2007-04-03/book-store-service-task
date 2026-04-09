@@ -1,7 +1,11 @@
 package com.epam.rd.autocode.spring.project.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
+import com.epam.rd.autocode.spring.project.model.enums.OrderStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,18 +15,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderDTO {
+    private Long id;
+    private String orderNumber;
+    private OrderStatus status;
 
-    @NotBlank(message = "Email клієнта є обов'язковим")
     private String clientEmail;
-
-    // Email працівника може бути порожнім, поки замовлення не підтверджено
     private String employeeEmail;
-
     private LocalDateTime orderDate;
-
-    @PositiveOrZero(message = "Вартість замовлення не може бути від'ємною")
     private BigDecimal price;
-
-    @NotEmpty(message = "Замовлення повинно містити хоча б одну книгу")
     private List<BookItemDTO> bookItems;
+    private boolean notified;
 }

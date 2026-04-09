@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{profile.title}">Особистий кабінет | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4F46E5; --bg: #F3F4F6; --card: #FFFFFF; --text: #1F2937; --border: #D1D5DB; --success: #10B981; --error: #EF4444;}
+        [data-theme="dark"] { --bg: #111827; --card: #1F2937; --text: #F9FAFB; --border: #374151; }
+
+        body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; padding: 40px 5%; transition: 0.3s; }
+        nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .logo { font-size: 1.5rem; font-weight: 600; color: var(--primary); text-decoration: none; }
+
+        .dashboard-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; align-items: flex-start;}
+        .card { background: var(--card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex: 1; min-width: 300px; max-width: 500px;}
+
+        label { display: block; margin-top: 15px; font-size: 0.9rem; opacity: 0.8; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box;}
+
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 20px; transition: 0.3s;}
+        .btn-success { background: var(--success); }
+        .btn:hover { opacity: 0.9; }
+
+        .balance-display { font-size: 2.5rem; font-weight: 700; color: var(--success); text-align: center; margin: 20px 0; }
+        .alert { padding: 10px; background: #D1FAE5; color: #065F46; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 0.9rem;}
+
+        /* --- Стилі для Toast-повідомлення --- */
+        #error-toast {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: var(--error);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        .success-card {
+            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+            color: #065F46;
+            padding: 25px;
+            border-radius: 16px;
+            margin: 0 auto 30px auto;
+            max-width: 800px;
+            text-align: center;
+            border: 1px solid #34D399;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .success-card h2 { margin-bottom: 5px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div id="error-toast" th:if="${error}">
+    <span style="font-size: 1.2rem;">⚠️</span>
+    <span th:text="${error}">Помилка</span>
+</div>
+
+<nav>
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+    <a th:href="@{/home}" style="color: var(--text); text-decoration: none;" th:text="#{profile.link.home}">На головну</a>
+</nav>
+
+<h1 style="text-align: center; margin-bottom: 30px;" th:text="#{profile.header}">Мій кабінет</h1>
+
+<div th:if="${param.orderSuccess}" class="success-card">
+    <div style="font-size: 3.5rem; margin-bottom: 10px;">🎉</div>
+    <h2 th:text="#{profile.order_success}">Оплата пройшла успішно!</h2>
+    <p th:text="#{profile.order_success_sub}">Книги вже готуються до відправки.</p>
+</div>
+
+<div class="dashboard-container">
+    <div class="card">
+        <h2 th:text="#{profile.card.settings}">Налаштування профілю</h2>
+        <div th:if="${param.success}" class="alert" th:text="#{profile.alert.updated}">Дані успішно оновлено!</div>
+        <form th:action="@{/profile/update}" th:object="${client}" method="post">
+            <label th:text="#{profile.label.name}">Ім'я</label>
+            <input type="text" th:field="*{name}" required>
+            <label th:text="#{profile.label.email_note}">Email</label>
+            <input type="email" th:field="*{email}" required>
+            <button type="submit" class="btn" th:text="#{profile.btn.save}">Зберегти зміни</button>
+        </form>
+    </div>
+    <div class="card">
+        <h2 th:text="#{profile.card.wallet}">Мій гаманець</h2>
+        <div class="balance-display" th:text="${client.balance != null ? client.balance : '0.0'} + ' ₴'"></div>
+        <p style="text-align: center; font-size: 0.9rem; opacity: 0.7;" th:text="#{profile.balance_sub}">Залишок коштів</p>
+
+        <form th:action="@{/profile/topup}" method="post">
+            <label th:text="#{profile.label.topup}">Сума поповнення</label>
+            <input type="number"
+                   name="amount"
+                   min="0.01"
+                   step="0.01"
+                   th:placeholder="#{profile.placeholder.topup}"
+                   required>
+            <button type="submit" class="btn btn-success" th:text="#{profile.btn.topup}">Поповнити</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+    // Скрипт для зникнення Toast-повідомлення через 5 секунд
+    document.addEventListener('DOMContentLoaded', function() {
+        const toast = document.getElementById('error-toast');
+        if (toast) {
+            setTimeout(() => {
+                toast.style.animation = "fadeOut 0.6s forwards";
+                setTimeout(() => toast.remove(), 600);
+            }, 5000); // 5 секунд
+        }
+    });
+</script>
+</body>
+</html>

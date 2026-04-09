@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{books.list.title}">Book Catalog | BookStore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            transition: 0.3s;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--card-bg);
+            padding: 25px 0;
+            border-right: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            transition: 0.3s;
+        }
+
+        .sidebar-header { padding: 0 25px; margin-bottom: 35px; }
+
+        /* КРАСИВЫЙ ЛОГОТИП */
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .nav-link {
+            display: flex; align-items: center; gap: 15px; padding: 14px 25px;
+            color: var(--text-muted); text-decoration: none !important; font-weight: 500; transition: 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color); background: rgba(79, 70, 229, 0.1);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .main-content { flex: 1; padding: 35px 45px; }
+
+        /* Header layout */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .lang-theme-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-right: 15px;
+            border-right: 2px solid var(--border-color);
+        }
+
+        #theme-toggle {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.3s;
+        }
+
+        /* Додайте це в кінець блоку <style> */
+        .book-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 10px 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Обмежуємо до 2 рядків */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-height: 2.4em; /* Щоб картки були рівними */
+        }
+
+        /* Для спискового вигляду */
+        .books-grid.list-mode .book-description {
+            -webkit-line-clamp: 1;
+            min-height: auto;
+            margin: 5px 0;
+        }
+
+        .btn-add {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+            transition: 0.3s;
+        }
+        .btn-add:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* Search & Controls */
+        .search-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .search-form { display: grid; grid-template-columns: 1fr 180px 180px auto; gap: 20px; align-items: flex-end; }
+        .search-input { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 8px; width: 100%; outline: none; }
+
+        .view-controls { display: flex; gap: 10px; margin-bottom: 25px; }
+        .btn-view {
+            background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600;
+        }
+        .btn-view.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* Books Grid */
+        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .books-grid.list-mode { grid-template-columns: 1fr; }
+        .book-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
+            padding: 20px; display: flex; flex-direction: column; transition: 0.3s;
+        }
+        .books-grid.list-mode .book-card { flex-direction: row; justify-content: space-between; align-items: center; }
+
+        .price-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; gap: 20px; }
+        .stock { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: 600; }
+
+        .card-actions { display: flex; gap: 10px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+        .books-grid.list-mode .card-actions { border-top: none; margin-top: 0; }
+
+        .btn-cart {
+            background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 8px;
+            flex: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+        }
+        .btn-edit { background: #F59E0B; color: white; padding: 10px; border-radius: 8px; text-decoration: none; flex: 1; text-align: center; font-size: 0.9rem; }
+        .btn-delete { background: #EF4444; color: white; border: none; padding: 10px; border-radius: 8px; flex: 0.5; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+
+    <nav>
+        <a th:href="@{/home}" class="nav-link"><i>🏠</i> <span th:text="#{nav.home}">Головна</span></a>
+        <a th:href="@{/books}" class="nav-link"><i>📖</i> <span th:text="#{menu.books}">Книги</span></a>
+
+        <a th:href="@{/clients}" class="nav-link" sec:authorize="hasRole('EMPLOYEE')">
+            <i>👥</i> <span th:text="#{menu.clients}">Клієнти</span>
+        </a>
+
+        <a th:href="@{/employees}" class="nav-link" sec:authorize="hasRole('EMPLOYEE')">
+            <i>👔</i> <span th:text="#{menu.employees}">Працівники</span>
+        </a>
+
+        <a th:href="@{/orders/employee/{email}(email=${#authentication.name})}"
+           class="nav-link"
+           sec:authorize="hasRole('EMPLOYEE')">
+            <i>🛒</i> <span th:text="#{menu.orders}">Всі Замовлення</span>
+        </a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="header">
+        <h1 th:text="#{books.header}">Каталог книг</h1>
+
+        <div class="header-actions">
+
+            <a th:href="@{/cart}"
+               class="btn-add"
+               sec:authorize="hasRole('CLIENT')"
+               style="background: #10B981; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">
+                🛒 Кошик
+            </a>
+
+            <div class="lang-theme-group">
+                <div style="display: flex; gap: 8px;">
+                    <a th:href="@{''(lang='uk')}" title="UA" style="text-decoration: none; font-size: 1.2rem;">🇺🇦</a>
+                    <a th:href="@{''(lang='en')}" title="EN" style="text-decoration: none; font-size: 1.2rem;">🇺🇸</a>
+                </div>
+                <button id="theme-toggle" th:title="#{nav.theme.toggle}">🌓</button>
+            </div>
+
+            <a th:href="@{/books/new}"
+               class="btn-add"
+               sec:authorize="hasRole('EMPLOYEE')"
+               th:text="#{books.btn.add}">+ Додати книгу</a>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <form th:action="@{/books}" method="get" class="search-form">
+            <div>
+                <label th:text="#{books.search.keyword}" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Пошук</label>
+                <input type="text" name="keyword" th:value="${keyword}" class="search-input">
+            </div>
+            <div>
+                <label th:text="#{books.search.genre}" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Жанр</label>
+                <select name="genre" class="search-input">
+                    <option value="" th:text="#{books.search.all_genres}">Всі жанри</option>
+                    <option th:each="g : ${allGenres}" th:value="${g}" th:text="${g}" th:selected="${g == genre}"></option>
+                </select>
+            </div>
+            <div>
+                <label th:text="#{books.search.sort}" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Сортування</label>
+                <select name="sortBy" class="search-input">
+                    <option value="name" th:selected="${sortBy == 'name'}" th:text="#{books.search.sort.name}">Назвою</option>
+                    <option value="price_asc" th:text="#{books.search.sort.price_asc}">Дешевші</option>
+                    <option value="price_desc" th:text="#{books.search.sort.price_desc}">Дорожчі</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-add" style="height: 48px; border: none; cursor: pointer;" th:text="#{books.search.btn_find}">Знайти</button>
+                <a th:href="@{/books}" class="btn-view" style="height: 48px; display: flex; align-items: center; text-decoration: none;" th:text="#{books.search.btn_reset}">Скинути</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="view-controls">
+        <button class="btn-view active" id="view-grid" th:text="#{books.view.grid}">Плиткою</button>
+        <button class="btn-view" id="view-list" th:text="#{books.view.list}">Списком</button>
+    </div>
+
+    <div class="books-grid" id="books-container">
+        <div th:each="book : ${books}" class="book-card">
+            <div>
+                <h3 th:text="${book.name}" style="font-weight: 700;">Назва</h3>
+                <p th:text="${book.author}" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">Автор</p>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    <span th:text="#{books.label.genre}">Жанр</span>: <span th:text="${book.genre}" style="color: var(--text-main);"></span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    <span th:text="#{books.label.language}">Мова</span>: <span th:text="${book.language}" style="color: var(--text-main);"></span>
+                </div>
+
+
+                <p class="book-description" th:text="${book.description}" th:title="${book.description}">
+
+                </p>
+
+                <div class="price-row">  </div>
+            </div>
+
+            <div class="price-row">
+                <span class="price"><span th:text="${book.price}"></span> ₴</span>
+                <span class="stock" th:text="#{books.label.stock} + ': ' + ${book.stockQuantity}"></span>
+            </div>
+
+            <div class="card-actions">
+
+
+                <a th:href="@{/books/{name}/edit(name=${book.name})}"
+                   class="btn-edit"
+                   sec:authorize="hasRole('EMPLOYEE')"
+                   th:text="#{books.btn.edit}">Edit</a>
+
+                <form th:action="@{/books/{name}/delete(name=${book.name})}"
+                      method="post"
+                      sec:authorize="hasRole('EMPLOYEE')"
+                      th:data-confirm-msg="#{books.btn.delete_confirm}"
+                      onsubmit="return confirm(this.getAttribute('data-confirm-msg'))"
+                      style="flex: 0.5;">
+                    <button type="submit" class="btn-delete">×</button>
+                </form>
+            </div>
+            <div sec:authorize="hasRole('CLIENT')" style="margin-top: 15px;">
+                <form th:action="@{/cart/add}" method="post">
+                    <input type="hidden" name="bookName" th:value="${book.name}">
+                    <button type="submit" class="btn-add"
+                            style="width: 100%; background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                        🛒 Додати у кошик
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Тема
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.setAttribute('data-theme', savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    // Вид (Плитка/Список)
+    const gridBtn = document.getElementById('view-grid');
+    const listBtn = document.getElementById('view-list');
+    const container = document.getElementById('books-container');
+
+    gridBtn.addEventListener('click', () => {
+        container.classList.remove('list-mode');
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    });
+
+    listBtn.addEventListener('click', () => {
+        container.classList.add('list-mode');
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    });
+</script>
+</body>
+</html>

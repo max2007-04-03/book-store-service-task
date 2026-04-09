@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{cart.title}">Мій кошик | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-color: #D1D5DB;
+            --input-bg: #FFFFFF;
+            --accent-green: #10B981;
+            --error-red: #EF4444;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+            --input-bg: #374151;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: 0.3s;
+        }
+
+        .top-nav {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 30px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 600;
+            background: var(--bg-color);
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: 0.2s;
+        }
+
+        .nav-item:hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 40px;
+            border: 1px solid var(--border-color);
+        }
+
+        h2 { margin-bottom: 25px; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+
+        .cart-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .cart-table th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border-color); color: var(--text-muted); }
+        .cart-table td { padding: 15px; border-bottom: 1px solid var(--border-color); }
+
+        /* Стилізація форми поповнення */
+        .wallet-section {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column; /* Змінено на column для розміщення помилки зверху */
+            gap: 15px;
+        }
+
+        .wallet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .top-up-form { display: flex; align-items: center; gap: 10px; }
+
+        input[type="number"] {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            width: 150px;
+        }
+
+        /* Стиль повідомлення про помилку */
+        .error-alert {
+            color: var(--error-red);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            border: 1px solid var(--error-red);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color); color: white; border: none; padding: 12px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; text-decoration: none;
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        .btn-success { background: var(--accent-green); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-success:hover { opacity: 0.9; }
+
+        .btn-icon.delete { color: #EF4444; background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+
+        .cart-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed var(--border-color);
+        }
+
+        .total-price { font-size: 1.6rem; font-weight: 800; color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <div class="nav-left">
+        <a th:href="@{/home}" class="nav-item">🏠 На головну</a>
+        <a th:href="@{/books}" class="nav-item">📖 До каталогу</a>
+    </div>
+    <div class="nav-right">
+        <button id="theme-toggle" class="nav-item">🌓 Тема</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 th:text="#{cart.title}">🛒 Мій кошик</h2>
+
+    <div class="wallet-section" th:unless="${cartItems == null or cartItems.isEmpty()}">
+
+        <div th:if="${error}" class="error-alert">
+            ⚠️ <span th:text="${error}">Повідомлення про помилку</span>
+        </div>
+
+        <div class="wallet-header">
+    </div>
+
+    <div th:if="${cartItems == null or cartItems.isEmpty()}" style="text-align: center; padding: 40px;">
+        <span style="font-size: 4rem;">🛍️</span>
+        <h3 th:text="#{cart.empty}">Ваш кошик порожній</h3>
+        <a th:href="@{/books}" class="btn-primary" style="margin-top: 20px;">До покупок</a>
+    </div>
+
+    <div th:unless="${cartItems == null or cartItems.isEmpty()}">
+        <table class="cart-table">
+            <thead>
+            <tr>
+                <th th:text="#{cart.table.book}">Книга</th>
+                <th th:text="#{cart.table.price}">Ціна</th>
+                <th th:text="#{cart.table.quantity}">Кількість</th>
+                <th th:text="#{cart.table.total}">Разом</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${cartItems}">
+                <td><strong th:text="${item.bookName}">Назва</strong></td>
+                <td><span th:text="${item.price}">0.00</span> ₴</td>
+                <td th:text="${item.quantity}">1</td>
+                <td><span style="color: var(--primary-color); font-weight: 700;"
+                          th:text="${item.price * item.quantity}">0.00</span> ₴</td>
+                <td style="text-align: right;">
+                    <form th:action="@{/cart/remove}" method="post">
+                        <input type="hidden" name="bookName" th:value="${item.bookName}">
+                        <button type="submit" class="btn-icon delete">❌</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="cart-summary">
+            <div>
+                <span style="color: var(--text-muted);" th:text="#{cart.summary.total}">Підсумок:</span><br>
+                <span class="total-price"><span th:text="${cartTotal}">0.00</span> ₴</span>
+            </div>
+
+            <form th:action="@{/orders/checkout}" method="post">
+                <button type="submit" class="btn-primary" th:text="#{cart.btn.checkout}">Оформити замовлення</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const toggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    if(localStorage.getItem('theme') === 'dark') html.setAttribute('data-theme', 'dark');
+    toggle.addEventListener('click', () => {
+        let theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    });
+</script>
+
+</body>
+</html>

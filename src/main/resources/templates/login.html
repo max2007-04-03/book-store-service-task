@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{login.title}">Вхід | BookStore</title>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-color: #D1D5DB;
+            --input-bg: #FFFFFF;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #374151;
+            --input-bg: #374151;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 500;
+            background: var(--card-bg);
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .nav-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .lang-links a {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-left: 10px;
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 25px;
+            font-size: 1.75rem;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: border-color 0.2s, ring 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            ring: 2px solid var(--primary-color);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            background: var(--primary-hover);
+        }
+
+        .footer-link {
+            display: block;
+            margin-top: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .footer-link span {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Повідомлення про помилки (якщо є) */
+        .error-msg {
+            background: #FEE2E2;
+            color: #B91C1C;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <a th:href="@{/home}" class="nav-item"> <span th:text="#{login.btn.home}">На головну</span></a>
+
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="lang-links">
+            <a th:href="@{''(lang='uk')}">UA</a>
+            <a th:href="@{''(lang='en')}">US</a>
+        </div>
+        <button id="theme-toggle" class="nav-item">🌓</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 th:text="#{login.header}">Вхід у систему</h2>
+
+    <div th:if="${param.error}" class="error-msg">
+        Невірний email або пароль
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <input type="email" name="username" th:placeholder="#{register.placeholder.email}" required>
+        </div>
+        <div class="form-group">
+            <input type="password" name="password" th:placeholder="#{register.placeholder.password}" required>
+        </div>
+        <button type="submit" th:text="#{login.btn.submit}">Увійти</button>
+    </form>
+
+    <a th:href="@{/register}" class="footer-link">
+         <span th:text="#{login.link.register}">Зареєструватися</span>
+    </a>
+</div>
+
+<script>
+    const toggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+
+    if(localStorage.getItem('theme') === 'dark') html.setAttribute('data-theme', 'dark');
+
+    toggle.addEventListener('click', () => {
+        let theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    });
+</script>
+</body>
+</html>

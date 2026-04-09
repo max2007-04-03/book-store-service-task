@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{client.edit.title}">Редагувати клієнта | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --card: #FFFFFF;
+            --text: #1F2937;
+            --border: #D1D5DB;
+        }
+
+        /* Поддержка темной темы */
+        [data-theme="dark"] {
+            --bg: #111827;
+            --card: #1F2937;
+            --text: #F9FAFB;
+            --border: #374151;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            transition: 0.3s;
+            margin: 0;
+        }
+
+        .form-card {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 { text-align: center; margin-bottom: 25px; color: var(--text); font-weight: 600; }
+
+        label { display: block; margin-top: 15px; font-size: 0.9rem; color: var(--text); opacity: 0.8; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* Стиль для полей только для чтения */
+        input[readonly] {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: rgba(0,0,0,0.05);
+            border-style: dashed;
+        }
+        [data-theme="dark"] input[readonly] { background: rgba(255,255,255,0.05); }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 25px;
+            transition: 0.3s;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text);
+            opacity: 0.6;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .cancel-link:hover { opacity: 1; color: var(--primary); }
+    </style>
+</head>
+<body>
+<div class="form-card">
+    <h2 th:text="#{client.edit.header}">Редагувати профіль</h2>
+
+    <form th:action="@{/clients/{e}/update(e=${client.email})}" th:object="${client}" method="post">
+
+        <label th:text="#{client.label.name}">Ім'я</label>
+        <input type="text" th:field="*{name}" required>
+
+        <label th:text="#{client.label.email_readonly}">Email (тільки читання)</label>
+        <input type="text" th:field="*{email}" readonly>
+
+        <label th:text="#{client.label.balance}">Баланс (₴)</label>
+        <input type="number" step="0.01" th:field="*{balance}" required>
+
+        <button type="submit" class="btn" th:text="#{client.btn.update}">Оновити дані</button>
+
+        <a th:href="@{/clients}" class="cancel-link" th:text="#{client.btn.cancel}">Скасувати</a>
+    </form>
+</div>
+<script>
+    if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+</body>
+</html>

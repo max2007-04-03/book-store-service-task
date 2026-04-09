@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{employee.list.title}">Персонал | BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5; --bg: #F3F4F6; --card: #FFFFFF;
+            --text: #1F2937; --muted: #6B7280; --border: #E5E7EB;
+        }
+        [data-theme="dark"] {
+            --bg: #111827; --card: #1F2937; --text: #F9FAFB; --muted: #9CA3AF; --border: #374151;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        /* КЛЮЧОВЕ: Робимо body флекс-контейнером */
+        body {
+            background-color: var(--bg); color: var(--text);
+            display: flex; min-height: 100vh; transition: 0.3s;
+        }
+
+        /* --- SIDEBAR (Бокова панель) --- */
+        .sidebar {
+            width: 280px; background: var(--card); border-right: 1px solid var(--border);
+            padding: 25px 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+        }
+        .logo {
+            font-size: 1.6rem; font-weight: 800; text-decoration: none; padding: 0 25px; margin-bottom: 40px;
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1.5px;
+        }
+        .nav-link {
+            display: flex; align-items: center; gap: 15px; padding: 14px 25px;
+            color: var(--muted); text-decoration: none; font-weight: 500; transition: 0.2s; border-left: 4px solid transparent;
+        }
+        .nav-link i { font-style: normal; font-size: 1.2rem; }
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary); background: rgba(79, 70, 229, 0.1); border-left-color: var(--primary);
+        }
+
+        /* --- MAIN CONTENT (Основний контент) --- */
+        .main-content { flex: 1; padding: 40px 5%; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        #theme-toggle { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+        .card {
+            background: var(--card); padding: 25px; border-radius: 20px;
+            border: 1px solid var(--border); transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .card h3 { font-weight: 700; margin-bottom: 10px; }
+        .card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+
+        .actions {
+            display: flex; justify-content: space-between; margin-top: 20px;
+            padding-top: 15px; border-top: 1px solid var(--border); align-items: center;
+        }
+        .btn-profile { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .btn-edit { background: #10B981; color: white; padding: 8px 16px; border-radius: 10px; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+        .btn-delete { background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <a th:href="@{/home}" class="logo">📚 BookStore</a>
+
+    <nav>
+        <a th:href="@{/home}" class="nav-link"><i>🏠</i> <span th:text="#{nav.home}">Головна</span></a>
+        <a th:href="@{/books}" class="nav-link"><i>📖</i> <span th:text="#{menu.books}">Книги</span></a>
+
+        <a th:href="@{/clients}" class="nav-link"><i>👥</i> <span th:text="#{menu.clients}">Клієнти</span></a>
+
+        <a th:href="@{/employees}" class="nav-link active" sec:authorize="hasRole('EMPLOYEE')"><i>👔</i> <span th:text="#{menu.employees}">Працівники</span></a>
+
+        <a th:href="@{/orders/employee/{email}(email=${#authentication.name})}" class="nav-link"><i>🛒</i> <span th:text="#{menu.orders}">Всі Замовлення</span></a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="header">
+        <h1 th:text="#{employee.list.header}">Персонал магазину</h1>
+        <div class="header-actions">
+            <div style="display: flex; gap: 8px;">
+                <a th:href="@{/employees(lang='uk')}" style="text-decoration: none;">🇺🇦</a>
+                <a th:href="@{/employees(lang='en')}" style="text-decoration: none;">🇺🇸</a>
+            </div>
+            <button id="theme-toggle">🌓</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div th:each="employee : ${employees}" class="card">
+            <h3 th:text="${employee.name}">Ім'я</h3>
+            <p><span>📧</span> <span th:text="${employee.email}">email</span></p>
+            <p><span>📞</span> <span th:text="${employee.phone ?: #messages.msg('employee.detail.not_specified')}">телефон</span></p>
+
+            <div class="actions">
+                <a th:href="@{/employees/{email}(email=${employee.email})}" class="btn-profile" th:text="#{employee.list.btn.details}">Профіль →</a>
+
+                <a th:if="${#authentication.name == employee.email}"
+                   th:href="@{/employees/{email}/edit(email=${employee.email})}"
+                   class="btn-edit" th:text="#{employee.list.btn.edit_own}">Редагувати</a>
+
+                <form th:action="@{/employees/delete}" method="post" th:if="${#authentication.name != employee.email}">
+                    <input type="hidden" name="email" th:value="${employee.email}">
+                    <button type="submit" class="btn-delete"
+                            th:attr="onclick='return confirm(\'' + #{employee.list.confirm_delete} + '\')'"
+                            th:text="#{employee.list.btn.delete}">Видалити</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.setAttribute('data-theme', savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+</script>
+</body>
+</html>
