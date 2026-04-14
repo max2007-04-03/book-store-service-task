@@ -63,7 +63,8 @@
 
             <div class="form-group">
                 <label th:text="#{book.form.label.price}">Ціна *</label>
-                <input type="number" step="0.01" th:field="*{price}">
+                <input type="number" step="0.01" min="0.01" th:field="*{price}">
+                <span class="error" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></span>
             </div>
 
             <div class="form-group">
@@ -73,7 +74,8 @@
 
             <div class="form-group">
                 <label th:text="#{book.form.label.pages}">Сторінки</label>
-                <input type="number" th:field="*{pages}">
+                <input type="number" min="1" th:field="*{pages}">
+                <span class="error" th:if="${#fields.hasErrors('pages')}" th:errors="*{pages}"></span>
             </div>
 
             <div class="form-group">
@@ -97,6 +99,7 @@
             <div class="form-group full-width">
                 <label th:text="#{book.form.label.stock}">Кількість на складі *</label>
                 <input type="number" th:field="*{stockQuantity}" min="0" required>
+                <span class="error" th:if="${#fields.hasErrors('stockQuantity')}" th:errors="*{stockQuantity}"></span>
             </div>
 
             <div class="form-group full-width">

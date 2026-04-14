@@ -4,10 +4,13 @@ import com.epam.rd.autocode.spring.project.dto.BookItemDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
 import com.epam.rd.autocode.spring.project.service.OrderService;
 import com.epam.rd.autocode.spring.project.service.BookService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,23 +55,31 @@ public class OrderController {
     }
 
     @GetMapping("/employee/{email}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    public String getOrdersForEmployee(@PathVariable String email,
-                                       @RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "10") int size,
-                                       @RequestParam(defaultValue = "orderDate") String sortBy,
-                                       Model model) {
+    public String getAllOrdersForEmployee(
+            @PathVariable String email,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "orderDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model) {
 
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
-        Page<OrderDTO> orderPage = orderService.getEmployeeDashboardOrders(email, pageable);
+        Sort.Direction direction = sortDir.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
 
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Page<OrderDTO> orderPage = orderService.getAllOrders(search, pageable);
 
         model.addAttribute("orders", orderPage.getContent());
         model.addAttribute("orderPage", orderPage);
-
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", orderPage.getTotalPages());
-        model.addAttribute("role", "Employee");
+
+        model.addAttribute("search", search);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("search", search);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equals("ASC") ? "DESC" : "ASC");
 
         return "orders/list";
     }
@@ -115,7 +126,7 @@ public class OrderController {
         String employeeEmail = principal.getName();
 
         orderService.shipOrder(id, employeeEmail);
-        log.info("📦 Працівник {} взяв у роботу та відправив замовлення #{}", employeeEmail, id);
+        log.info(" Працівник {} взяв у роботу та відправив замовлення #{}", employeeEmail, id);
 
         return "redirect:/orders/employee/" + employeeEmail;
     }

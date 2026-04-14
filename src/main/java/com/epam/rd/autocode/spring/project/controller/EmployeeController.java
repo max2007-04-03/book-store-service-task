@@ -1,10 +1,13 @@
 package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
+import com.epam.rd.autocode.spring.project.exception.InvalidProfileDataException;
 import com.epam.rd.autocode.spring.project.service.EmployeeService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -12,10 +15,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.time.LocalDate;
 
 import java.security.Principal;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -66,25 +72,31 @@ public class EmployeeController {
     }
 
     @PostMapping("/{email}/update")
-    public String updateEmployeeProfile(@PathVariable String email,
-                                        @Valid @ModelAttribute("employee") EmployeeDTO employeeDTO,
-                                        BindingResult bindingResult,
-                                        Principal principal,
-                                        Model model) {
+    public String updateEmployee(@PathVariable String email,
+                                 @ModelAttribute("employee") EmployeeDTO employeeDTO) {
 
-        if (principal == null || !principal.getName().equals(email)) {
-            log.warn("❌ Безпека: {} намагається оновити дані чужого профілю ({})",
-                    principal != null ? principal.getName() : "Гість", email);
-            return "redirect:/employees";
+        String phone = employeeDTO.getPhone();
+        if (phone != null && !phone.isBlank()) {
+            if (!phone.matches("^\\+?[0-9\\-\\s\\(\\)]+$")) {
+                throw new InvalidProfileDataException("Помилка: Телефон не може містити літери чи спецсимволи. Дозволені лише цифри, +, -, () та пробіли.");
+            }
+            long digitCount = phone.chars().filter(Character::isDigit).count();
+            if (digitCount < 9 || digitCount > 15) {
+                throw new InvalidProfileDataException("Помилка: Номер телефону має містити від 9 до 15 цифр.");
+            }
         }
 
-        if (bindingResult.hasErrors()) {
-            log.warn("❌ Помилка валідації при оновленні профілю {}: {}", email, bindingResult.getAllErrors());
-            return "employees/employee-edit";
+        LocalDate birthDate = employeeDTO.getBirthDate();
+        if (birthDate != null) {
+            if (birthDate.isAfter(LocalDate.now())) {
+                throw new InvalidProfileDataException("Помилка: Дата народження не може бути у майбутньому.");
+            }
+            if (birthDate.isBefore(LocalDate.now().minusYears(120))) {
+                throw new InvalidProfileDataException("Помилка: Вказано занадто стару дату. Перевірте правильність року.");
+            }
         }
 
-        employeeService.updatePersonalData(email, employeeDTO.getPhone(), employeeDTO.getBirthDate());
-        log.info("✅ Працівник {} успішно оновив свої персональні дані", email);
+        employeeService.updatePersonalData(email, phone, birthDate);
 
         return "redirect:/employees/" + email;
     }
@@ -92,14 +104,14 @@ public class EmployeeController {
     @PostMapping("/delete")
     public String deleteEmployee(@RequestParam String email, Principal principal, RedirectAttributes redirectAttributes) {
         if (principal != null && principal.getName().equals(email)) {
-            log.warn("❌ Спроба самовидалення: працівник {} намагався видалити свій акаунт", email);
+            log.warn(" Спроба самовидалення: працівник {} намагався видалити свій акаунт", email);
 
             redirectAttributes.addFlashAttribute("errorMessage", "Ви не можете видалити власний обліковий запис.");
             return "redirect:/employees";
         }
 
         employeeService.deleteEmployeeByEmail(email);
-        log.info("🗑️ Акаунт працівника {} було успішно видалено адміністратором/колегою {}", email, principal != null ? principal.getName() : "Система");
+        log.info(" Акаунт працівника {} було успішно видалено адміністратором/колегою {}", email, principal != null ? principal.getName() : "Система");
         return "redirect:/employees";
     }
 }

@@ -216,7 +216,7 @@
                class="btn-add"
                sec:authorize="hasRole('CLIENT')"
                style="background: #10B981; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">
-                🛒 Кошик
+                🛒 <span th:text="#{nav.cart}">Кошик</span>
             </a>
 
             <div class="lang-theme-group">
@@ -314,7 +314,7 @@
                     <input type="hidden" name="bookName" th:value="${book.name}">
                     <button type="submit" class="btn-add"
                             style="width: 100%; background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600;">
-                        🛒 Додати у кошик
+                        🛒 <span th:text="#{books.btn.add_to_cart}">Додати у кошик</span>
                     </button>
                 </form>
             </div>

@@ -204,7 +204,7 @@
             </div>
 
             <a th:href="@{/cart}" sec:authorize="hasRole('CLIENT')" class="nav-btn"
-               style="background: #10B981; color: white;">🛒 Кошик</a>
+               style="background: #10B981; color: white;">🛒 <span th:text="#{nav.cart}">Кошик</span></a>
 
             <a th:href="@{/profile}" sec:authorize="hasRole('CLIENT')" class="nav-btn"
                style="background: var(--primary-color); color: white;" th:text="#{nav.cabinet}">Мій кабінет</a>
@@ -228,15 +228,27 @@
     </div>
 
     <div class="hero">
-        <h1 th:text="#{hero.title}">Система управління магазином</h1>
-        <p th:text="#{hero.subtitle}">Оберіть розділ для роботи з даними</p>
+        <div sec:authorize="hasRole('EMPLOYEE')">
+            <h1 th:text="#{hero.title}">Система управління магазином</h1>
+            <p th:text="#{hero.subtitle}">Оберіть розділ для роботи з даними</p>
+        </div>
+
+        <div sec:authorize="!hasRole('EMPLOYEE')">
+            <h1 th:text="#{hero.title.client}">Ласкаво просимо до BookStore!</h1>
+            <p th:text="#{hero.subtitle.client}">Будь ласка, виберіть книгу у каталозі</p>
+        </div>
     </div>
 
     <div class="dashboard-grid">
-        <a th:href="@{/books}" class="menu-card">
+        <a th:href="@{/books}" class="menu-card" sec:authorize="hasRole('EMPLOYEE')">
             <div class="card-icon">📖</div>
             <h3 th:text="#{menu.books}">Книги</h3>
             <p th:text="#{menu.books.desc}">Каталог та редагування</p>
+        </a>
+
+        <a th:href="@{/books}" class="menu-card" sec:authorize="!hasRole('EMPLOYEE')" style="justify-content: center; padding: 45px 25px;">
+            <div class="card-icon" style="font-size: 4.5rem; margin-bottom: 20px;">📖</div>
+            <h3 th:text="#{menu.books}">Книги</h3>
         </a>
 
         <a th:href="@{/clients}" class="menu-card" sec:authorize="hasRole('EMPLOYEE')">

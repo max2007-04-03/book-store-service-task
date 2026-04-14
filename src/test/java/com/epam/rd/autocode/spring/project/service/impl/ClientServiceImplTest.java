@@ -1,6 +1,7 @@
 package com.epam.rd.autocode.spring.project.service.impl;
 
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
+import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
@@ -59,25 +60,23 @@ class ClientServiceImplTest {
         clientDTO.setBalance(BigDecimal.valueOf(1000.0));
     }
 
+
     @Test
     void getAllClients_ShouldReturnPageOfClients() {
-        // 1. Створюємо об'єкти для пагінації
         Pageable pageable = PageRequest.of(0, 10);
         Page<Client> clientPage = new PageImpl<>(List.of(client));
 
-        // 2. Налаштовуємо Mock-репозиторій на роботу з Pageable
         when(clientRepository.findAll(pageable)).thenReturn(clientPage);
         when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
 
-        // 3. Викликаємо оновлений метод сервісу
         Page<ClientDTO> result = clientService.getAllClients(pageable);
 
-        // 4. Перевіряємо результат
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals(TEST_EMAIL, result.getContent().get(0).getEmail());
         verify(clientRepository, times(1)).findAll(pageable);
     }
+
 
     @Test
     void getClientByEmail_ShouldReturnClient_WhenExists() {
@@ -97,6 +96,7 @@ class ClientServiceImplTest {
         assertThrows(NotFoundException.class, () -> clientService.getClientByEmail("unknown@test.com"));
     }
 
+
     @Test
     void addClient_ShouldSaveAndReturnClient() {
         ClientDTO dto = new ClientDTO();
@@ -115,6 +115,7 @@ class ClientServiceImplTest {
         verify(clientRepository, times(1)).save(clientToSave);
     }
 
+
     @Test
     void updateClientByEmail_ShouldUpdateAndReturnClient() {
         when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
@@ -129,11 +130,118 @@ class ClientServiceImplTest {
     }
 
     @Test
+    void updateClientByEmail_ShouldThrowNotFoundException_WhenDoesNotExist() {
+        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> clientService.updateClientByEmail("unknown@test.com", clientDTO));
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
+    void updateClient_ShouldCallUpdateClientByEmail() {
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+        when(clientRepository.save(any(Client.class))).thenReturn(client);
+        when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
+
+        clientService.updateClient(TEST_EMAIL, clientDTO);
+
+        verify(clientRepository, times(1)).save(client);
+    }
+
+
+    @Test
     void deleteClientByEmail_ShouldCallDeleteMethod() {
         doNothing().when(clientRepository).deleteByEmail(TEST_EMAIL);
 
         clientService.deleteClientByEmail(TEST_EMAIL);
 
         verify(clientRepository, times(1)).deleteByEmail(TEST_EMAIL);
+    }
+
+
+    @Test
+    void updateClientProfile_ShouldUpdateProfile_WhenEmailIsUnchanged() {
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+
+        clientDTO.setName("New Name"); // Змінюємо ім'я, але залишаємо той самий email
+
+        clientService.updateClientProfile(TEST_EMAIL, clientDTO);
+
+        verify(clientRepository, times(1)).save(client);
+        assertEquals("New Name", client.getName());
+    }
+
+    @Test
+    void updateClientProfile_ShouldUpdateProfile_WhenNewEmailIsAvailable() {
+        String newEmail = "new@test.com";
+        clientDTO.setEmail(newEmail);
+
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+        when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
+
+        clientService.updateClientProfile(TEST_EMAIL, clientDTO);
+
+        verify(clientRepository, times(1)).save(client);
+        assertEquals(newEmail, client.getEmail());
+    }
+
+    @Test
+    void updateClientProfile_ShouldThrowAlreadyExistException_WhenNewEmailIsTaken() {
+        String newEmail = "new@test.com";
+        clientDTO.setEmail(newEmail);
+
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+        // Імітуємо, що новий email вже зайнятий іншим користувачем
+        when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.of(new Client()));
+
+        assertThrows(AlreadyExistException.class, () -> clientService.updateClientProfile(TEST_EMAIL, clientDTO));
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
+    void updateClientProfile_ShouldThrowNotFoundException_WhenClientDoesNotExist() {
+        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> clientService.updateClientProfile("unknown@test.com", clientDTO));
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+
+    @Test
+    void addBalance_ShouldIncreaseBalance_WhenAmountIsPositive() {
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+
+        BigDecimal amountToAdd = BigDecimal.valueOf(500.0);
+        clientService.addBalance(TEST_EMAIL, amountToAdd);
+
+        verify(clientRepository, times(1)).save(client);
+        assertEquals(0, BigDecimal.valueOf(1500.0).compareTo(client.getBalance()));
+    }
+
+    @Test
+    void addBalance_ShouldSetBalance_WhenCurrentBalanceIsNull() {
+        client.setBalance(null);
+        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+
+        BigDecimal amountToAdd = BigDecimal.valueOf(500.0);
+        clientService.addBalance(TEST_EMAIL, amountToAdd);
+
+        verify(clientRepository, times(1)).save(client);
+        assertEquals(amountToAdd, client.getBalance());
+    }
+
+    @Test
+    void addBalance_ShouldThrowIllegalArgumentException_WhenAmountIsZeroOrLess() {
+        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(TEST_EMAIL, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(TEST_EMAIL, BigDecimal.valueOf(-100.0)));
+        verify(clientRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void addBalance_ShouldThrowRuntimeException_WhenClientDoesNotExist() {
+        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> clientService.addBalance("unknown@test.com", BigDecimal.valueOf(100.0)));
+        verify(clientRepository, never()).save(any(Client.class));
     }
 }

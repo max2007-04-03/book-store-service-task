@@ -182,4 +182,17 @@ public class OrderServiceImpl implements OrderService {
                         .collect(Collectors.toList()))
                 .build();
     }
+
+    @Override
+    public Page<OrderDTO> getAllOrders(String search, Pageable pageable) {
+        Page<Order> orders;
+
+        if (search != null && !search.trim().isEmpty()) {
+            orders = orderRepository.findByOrderNumberContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            orders = orderRepository.findAll(pageable);
+        }
+
+        return orders.map(this::mapToDTO);
+    }
 }

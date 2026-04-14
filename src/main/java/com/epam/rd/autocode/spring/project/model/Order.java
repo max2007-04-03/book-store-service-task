@@ -47,16 +47,5 @@ public class Order {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean notified = false;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Order)) return false;
-        Order order = (Order) o;
-        return id != null && id.equals(order.getId());
-    }
 
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }

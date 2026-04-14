@@ -1,17 +1,23 @@
 package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.BookDTO;
+import com.epam.rd.autocode.spring.project.exception.InvalidBookDataException;
 import com.epam.rd.autocode.spring.project.service.BookService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -69,10 +75,22 @@ public class BookController {
     @PostMapping
     public String addBook(@Valid @ModelAttribute("book") BookDTO bookDTO,
                           BindingResult bindingResult, Model model) {
+
+        if (bookDTO.getPrice() != null && bookDTO.getPrice().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new InvalidBookDataException("Дія заблокована: Ціна не може бути від'ємною!");
+        }
+        if (bookDTO.getPages() != null && bookDTO.getPages() < 1) {
+            throw new InvalidBookDataException("Дія заблокована: Кількість сторінок має бути 1 або більше.");
+        }
+        if (bookDTO.getStockQuantity() != null && bookDTO.getStockQuantity() < 0) {
+            throw new InvalidBookDataException("Дія заблокована: Кількість на складі не може бути від'ємною.");
+        }
+
         if (bindingResult.hasErrors()) {
-            log.warn(" Помилка валідації при додаванні книги: {}", bindingResult.getAllErrors());
-            model.addAttribute("isEdit", false);
-            return "books/create";
+            String errorMessages = bindingResult.getFieldErrors().stream()
+                    .map(FieldError::getDefaultMessage)
+                    .collect(Collectors.joining("; "));
+            throw new InvalidBookDataException("Помилка валідації: " + errorMessages);
         }
 
         bookService.addBook(bookDTO);
@@ -92,10 +110,22 @@ public class BookController {
     public String updateBook(@PathVariable String name,
                              @Valid @ModelAttribute("book") BookDTO bookDTO,
                              BindingResult bindingResult, Model model) {
+
+        if (bookDTO.getPrice() != null && bookDTO.getPrice().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new InvalidBookDataException("Дія заблокована: Ціна не може бути від'ємною!");
+        }
+        if (bookDTO.getPages() != null && bookDTO.getPages() < 1) {
+            throw new InvalidBookDataException("Дія заблокована: Кількість сторінок має бути 1 або більше.");
+        }
+        if (bookDTO.getStockQuantity() != null && bookDTO.getStockQuantity() < 0) {
+            throw new InvalidBookDataException("Дія заблокована: Кількість на складі не може бути від'ємною.");
+        }
+
         if (bindingResult.hasErrors()) {
-            log.warn(" Помилка валідації при оновленні книги '{}': {}", name, bindingResult.getAllErrors());
-            model.addAttribute("isEdit", true);
-            return "books/create";
+            String errorMessages = bindingResult.getFieldErrors().stream()
+                    .map(FieldError::getDefaultMessage)
+                    .collect(Collectors.joining("; "));
+            throw new InvalidBookDataException("Помилка валідації: " + errorMessages);
         }
 
         bookService.updateBookByName(name, bookDTO);

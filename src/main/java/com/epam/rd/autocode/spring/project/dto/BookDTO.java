@@ -2,6 +2,7 @@ package com.epam.rd.autocode.spring.project.dto;
 
 import com.epam.rd.autocode.spring.project.model.enums.AgeGroup;
 import com.epam.rd.autocode.spring.project.model.enums.Language;
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -42,5 +43,8 @@ public class BookDTO {
 
     private Language language;
 
+    @Min(value = 0, message = "Кількість на складі не може бути від'ємною")
     private Integer stockQuantity;
+
+
 }

@@ -1,4 +1,4 @@
-package com.epam.rd.autocode.spring.project.security;
+package com.epam.rd.autocode.spring.project.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

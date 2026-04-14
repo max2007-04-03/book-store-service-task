@@ -2,8 +2,10 @@ package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
 import com.epam.rd.autocode.spring.project.service.OrderService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +30,7 @@ public class HomeController {
             model.addAttribute("orders", newNotifications);
 
             if (!newNotifications.isEmpty()) {
-                log.info("🔔 Користувач {} має {} нових сповіщень про відправку замовлень", email, newNotifications.size());
+                log.info(" Користувач {} має {} нових сповіщень про відправку замовлень", email, newNotifications.size());
             }
         }
 

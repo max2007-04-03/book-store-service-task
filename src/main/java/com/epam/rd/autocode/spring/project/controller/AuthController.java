@@ -2,15 +2,20 @@ package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
 import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
-import com.epam.rd.autocode.spring.project.security.JwtUtil;
+import com.epam.rd.autocode.spring.project.security.jwt.JwtUtil;
 import com.epam.rd.autocode.spring.project.service.ClientService;
 import com.epam.rd.autocode.spring.project.service.EmployeeService;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -114,9 +119,6 @@ public class AuthController {
             return "register";
         }
 
-        String rawPassword = clientDTO.getPassword();
-        String encodedPassword = passwordEncoder.encode(rawPassword);
-        clientDTO.setPassword(encodedPassword);
 
         if (ROLE_EMPLOYEE.equals(role)) {
             if (!EMPLOYEE_SECRET.equals(serviceCode)) {
@@ -127,13 +129,13 @@ public class AuthController {
             EmployeeDTO empDto = new EmployeeDTO();
             empDto.setEmail(clientDTO.getEmail());
             empDto.setName(clientDTO.getName());
-            empDto.setPassword(encodedPassword);
+            empDto.setPassword(clientDTO.getPassword());
             employeeService.addEmployee(empDto);
-            log.info("✅ Зареєстровано нового працівника: {}", empDto.getEmail());
+            log.info(" Зареєстровано нового працівника: {}", empDto.getEmail());
 
         } else if (ROLE_CLIENT.equals(role)) {
             clientService.addClient(clientDTO);
-            log.info("✅ Зареєстровано нового клієнта: {}", clientDTO.getEmail());
+            log.info(" Зареєстровано нового клієнта: {}", clientDTO.getEmail());
         }
 
         return "redirect:/login?registered";
@@ -149,7 +151,7 @@ public class AuthController {
 
         SecurityContextHolder.clearContext();
 
-        log.info("✅ Користувач успішно вийшов із системи");
+        log.info(" Користувач успішно вийшов із системи");
         return "redirect:/login?logout";
     }
 }

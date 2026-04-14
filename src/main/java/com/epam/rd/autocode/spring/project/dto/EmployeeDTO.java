@@ -30,4 +30,6 @@ public class EmployeeDTO {
     @Email(message = "Некоректний формат email")
     @UniqueEmail
     private String email;
+
+
 }

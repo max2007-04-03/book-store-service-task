@@ -5,22 +5,45 @@
     <title th:text="#{employee.edit.title}">Редагувати профіль | BookStore</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #10B981; --bg: #F3F4F6; --card: #FFFFFF; --text: #1F2937; --border: #D1D5DB; }
+        :root { --primary: #10B981; --bg: #F3F4F6; --card: #FFFFFF; --text: #1F2937; --border: #D1D5DB; --error: #EF4444; }
 
-        /* Поддержка темной темы из твоего дизайна */
-        [data-theme="dark"] { --bg: #111827; --card: #1F2937; --text: #F9FAFB; --border: #374151; }
+        [data-theme="dark"] { --bg: #111827; --card: #1F2937; --text: #F9FAFB; --border: #374151; --error: #F87171; }
 
         body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 40px; transition: 0.3s; margin: 0;}
         .form-card { background: var(--card); padding: 40px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid var(--border); box-shadow: 0 10px 15px rgba(0,0,0,0.1);}
 
-        h2 { color: var(--text); font-weight: 600; }
+        h2 { color: var(--text); font-weight: 600; text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
+
         label { display: block; margin-top: 15px; font-size: 0.9rem; color: var(--text); opacity: 0.8; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box; outline: none;}
+
+        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box; outline: none; transition: 0.2s;}
         input:focus { border-color: var(--primary); }
 
-        /* Стили для заблокированных полей */
+        input.is-invalid { border-color: var(--error); background: rgba(239, 68, 68, 0.05); }
+
         input[readonly] { opacity: 0.6; cursor: not-allowed; background: rgba(0,0,0,0.05); border-style: dashed; }
         [data-theme="dark"] input[readonly] { background: rgba(255,255,255,0.05); }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+            transition: opacity 0.5s ease;
+        }
+
+        .global-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid var(--error);
+            transition: opacity 0.5s ease;
+        }
 
         .btn { background: var(--primary); color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 25px; transition: 0.3s;}
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -31,10 +54,18 @@
 </head>
 <body>
 <div class="form-card">
-    <h2 style="text-align: center; margin-bottom: 10px;" th:text="#{employee.edit.header}">Особисті дані</h2>
-    <p style="text-align: center; font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px;" th:text="#{employee.edit.subtitle}">Ви можете змінити лише контактну інформацію</p>
+    <h2 th:text="#{employee.edit.header}">Особисті дані</h2>
+    <p class="subtitle" th:text="#{employee.edit.subtitle}">Ви можете змінити лише контактну інформацію</p>
 
     <form th:action="@{/employees/{e}/update(e=${employee.email})}" th:object="${employee}" method="post">
+
+        <div th:if="${error}" class="global-error" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; border: 1px solid #EF4444;">
+            <span th:text="${error}">Тут буде текст помилки</span>
+        </div>
+
+        <div th:if="${#fields.hasAnyErrors()}" class="global-error error-fade">
+            Будь ласка, виправте помилки у формі нижче.
+        </div>
 
         <label th:text="#{employee.label.name_readonly}">Ім'я (заборонено до зміни)</label>
         <input type="text" th:field="*{name}" readonly>
@@ -43,18 +74,43 @@
         <input type="text" th:field="*{email}" readonly>
 
         <label th:text="#{employee.label.phone}">Телефон</label>
-        <input type="text" th:field="*{phone}" placeholder="+380...">
+        <input type="text" th:field="*{phone}" placeholder="+380..."
+               th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''">
+        <span class="error-message error-fade" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
 
         <label th:text="#{employee.label.birthday}">Дата народження</label>
-        <input type="date" th:field="*{birthDate}">
+        <input type="date" th:field="*{birthDate}"
+               th:classappend="${#fields.hasErrors('birthDate')} ? 'is-invalid' : ''">
+        <span class="error-message error-fade" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
 
         <button type="submit" class="btn" th:text="#{employee.btn.save}">Зберегти зміни</button>
 
         <a th:href="@{/employees}" class="cancel-link" th:text="#{employee.btn.cancel}">Скасувати</a>
     </form>
 </div>
+
 <script>
     if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const errorElements = document.querySelectorAll('.error-fade');
+
+        if(errorElements.length > 0) {
+            setTimeout(() => {
+                errorElements.forEach(el => {
+                    el.style.opacity = '0';
+                    setTimeout(() => {
+                        el.style.display = 'none';
+                    }, 500);
+                });
+
+                const invalidInputs = document.querySelectorAll('.is-invalid');
+                invalidInputs.forEach(input => {
+                    input.classList.remove('is-invalid');
+                });
+            }, 5000);
+        }
+    });
 </script>
 </body>
 </html>

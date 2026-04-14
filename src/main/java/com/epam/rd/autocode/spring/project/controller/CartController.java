@@ -2,10 +2,12 @@ package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.service.BookService;
-import com.epam.rd.autocode.spring.project.service.CartService;
+import com.epam.rd.autocode.spring.project.service.impl.CartService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
+
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -40,13 +42,13 @@ public class CartController {
         BookDTO book = bookService.getBookByName(bookName);
 
         if (book.getStockQuantity() == null || book.getStockQuantity() < quantity) {
-            log.warn("❌ Спроба додати в кошик книгу '{}', якої немає в достатній кількості", bookName);
+            log.warn(" Спроба додати в кошик книгу '{}', якої немає в достатній кількості", bookName);
             redirectAttributes.addFlashAttribute("errorMessage", "Вибачте, книги '" + bookName + "' недостатньо на складі.");
             return redirectToPreviousPage(referer);
         }
 
         cartService.addItemToDatabaseCart(principal.getName(), bookName, quantity, book.getPrice());
-        log.info("✅ Користувач {} додав у кошик '{}' ({} шт.)", principal.getName(), bookName, quantity);
+        log.info(" Користувач {} додав у кошик '{}' ({} шт.)", principal.getName(), bookName, quantity);
 
         return redirectToPreviousPageWithParam(referer, "added_to_cart");
     }
@@ -54,7 +56,7 @@ public class CartController {
     @PostMapping("/remove")
     public String removeFromCart(@RequestParam String bookName, Principal principal) {
         cartService.removeItemFromDatabaseCart(principal.getName(), bookName);
-        log.info("🗑️ Користувач {} видалив з кошика '{}'", principal.getName(), bookName);
+        log.info(" Користувач {} видалив з кошика '{}'", principal.getName(), bookName);
         return "redirect:/cart";
     }
 

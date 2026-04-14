@@ -1,10 +1,12 @@
 package com.epam.rd.autocode.spring.project.aop;
 
 import lombok.extern.slf4j.Slf4j;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
@@ -24,9 +26,9 @@ public class LoggingAspect {
 
 
         if (log.isDebugEnabled()) {
-            log.debug("▶️ [ENTRY] {}.{}() з аргументами: {}", className, methodName, sanitizeArgs(joinPoint.getArgs()));
+            log.debug(" [ENTRY] {}.{}() з аргументами: {}", className, methodName, sanitizeArgs(joinPoint.getArgs()));
         } else {
-            log.info("▶️ [ENTRY] {}.{}()", className, methodName);
+            log.info("️ [ENTRY] {}.{}()", className, methodName);
         }
 
         StopWatch stopWatch = new StopWatch();
@@ -36,13 +38,13 @@ public class LoggingAspect {
             Object result = joinPoint.proceed();
 
             stopWatch.stop();
-            log.info("✅ [EXIT] {}.{}() виконано успішно за {} мс", className, methodName, stopWatch.getTotalTimeMillis());
+            log.info(" [EXIT] {}.{}() виконано успішно за {} мс", className, methodName, stopWatch.getTotalTimeMillis());
 
             return result;
 
         } catch (Throwable exception) {
             stopWatch.stop();
-            log.error("❌ [ERROR] {}.{}() впав через {} мс. Причина: {}",
+            log.error(" [ERROR] {}.{}() впав через {} мс. Причина: {}",
                     className, methodName, stopWatch.getTotalTimeMillis(), exception.getMessage());
             throw exception;
         }

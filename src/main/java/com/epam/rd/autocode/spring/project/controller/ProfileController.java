@@ -1,15 +1,18 @@
 package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
+import com.epam.rd.autocode.spring.project.exception.InvalidProfileDataException;
 import com.epam.rd.autocode.spring.project.service.ClientService;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -32,23 +35,21 @@ public class ProfileController {
     }
 
     @PostMapping("/update")
-    public String updateProfile(@Valid @ModelAttribute("client") ClientDTO clientDTO,
-                                BindingResult bindingResult,
+    public String updateProfile(@ModelAttribute("client") ClientDTO clientDTO,
                                 Principal principal,
-                                HttpServletResponse response,
-                                Model model) {
+                                HttpServletResponse response) {
 
-        if (bindingResult.hasErrors()) {
-            log.warn("❌ Помилка валідації при оновленні профілю {}: {}", principal.getName(), bindingResult.getAllErrors());
-            return "client-profile";
+        if (clientDTO.getName() == null || clientDTO.getName().trim().isEmpty()) {
+            throw new InvalidProfileDataException("Помилка: Ім'я не може бути порожнім.");
         }
 
         boolean emailChanged = !principal.getName().equals(clientDTO.getEmail());
+
         clientService.updateClientProfile(principal.getName(), clientDTO);
-        log.info("✅ Користувач {} успішно оновив свій профіль", principal.getName());
+        log.info(" Користувач {} успішно оновив свій профіль", principal.getName());
 
         if (emailChanged) {
-            log.info("🔄 Користувач змінив email. Видалення JWT токена та редірект на логін.");
+            log.info(" Користувач змінив email. Видалення JWT токена та редірект на логін.");
             Cookie cookie = new Cookie("JWT", null);
             cookie.setPath("/");
             cookie.setMaxAge(0);

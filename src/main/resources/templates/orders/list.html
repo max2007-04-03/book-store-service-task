@@ -80,16 +80,27 @@
 </div>
 
 <div class="main-content">
-    <div class="header">
-        <h1 th:text="#{menu.orders}">Всі замовлення</h1>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div style="display: flex; gap: 10px;">
-                <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇦</a>
-                <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇸</a>
-            </div>
-            <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.4rem;">🌓</button>
+    <<div class="header">
+    <h1 th:text="#{menu.orders}">Всі замовлення</h1>
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="display: flex; gap: 10px;">
+            <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇦</a>
+            <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇸</a>
         </div>
+        <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.4rem;">🌓</button>
     </div>
+</div>
+
+    <form th:action="@{/orders/employee/{email}(email=${#authentication.name})}" method="get" style="display: flex; gap: 10px; margin-bottom: 25px;">
+        <input type="hidden" name="sortBy" th:value="${sortBy}">
+        <input type="hidden" name="sortDir" th:value="${sortDir}">
+
+        <input type="text" name="search" th:value="${search}" placeholder="🔍 Пошук за # номером..."
+               style="padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); outline: none; width: 300px; font-family: inherit;">
+        <button type="submit" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">Знайти</button>
+        <a th:if="${search != null and !search.isEmpty()}" th:href="@{/orders/employee/{email}(email=${#authentication.name})}"
+           style="background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center;">Скинути</a>
+    </form>
 
     <div class="table-container">
         <table>
@@ -99,7 +110,15 @@
                 <th>Дата</th>
                 <th>Клієнт</th>
                 <th>Товари</th>
-                <th>Сума</th>
+                <th>
+                    <a th:href="@{/orders/employee/{email}(email=${#authentication.name}, sortBy='price', sortDir=${sortBy == 'price' ? reverseSortDir : 'DESC'}, search=${search})}"
+                       style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px; text-transform: uppercase;">
+                        Сума
+                        <span th:if="${sortBy == 'price' and sortDir == 'DESC'}" style="color: var(--primary); font-size: 1rem;">▼</span>
+                        <span th:if="${sortBy == 'price' and sortDir == 'ASC'}" style="color: var(--primary); font-size: 1rem;">▲</span>
+                        <span th:if="${sortBy != 'price'}" style="opacity: 0.3; font-size: 1rem;">↕</span>
+                    </a>
+                </th>
                 <th>Статус</th>
                 <th>Дія</th>
             </tr>

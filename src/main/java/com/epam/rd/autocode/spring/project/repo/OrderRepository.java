@@ -18,4 +18,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o LEFT JOIN o.employee e " +
             "WHERE (e.email = :email) OR (o.status = com.epam.rd.autocode.spring.project.model.enums.OrderStatus.PAID)")
     Page<Order> findAllForEmployeeDashboard(@Param("email") String email, Pageable pageable);
+
+    Page<Order> findByOrderNumberContainingIgnoreCase(String orderNumber, Pageable pageable);
 }

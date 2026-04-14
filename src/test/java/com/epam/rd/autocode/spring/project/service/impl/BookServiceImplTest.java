@@ -2,6 +2,7 @@ package com.epam.rd.autocode.spring.project.service.impl;
 
 import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
+import com.epam.rd.autocode.spring.project.exception.OutOfStockException;
 import com.epam.rd.autocode.spring.project.model.Book;
 import com.epam.rd.autocode.spring.project.repo.BookRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,13 +28,13 @@ import static org.mockito.Mockito.*;
 class BookServiceImplTest {
 
     @Mock
-    private BookRepository bookRepository; // Робимо заглушку для бази даних
+    private BookRepository bookRepository;
 
     @Mock
-    private ModelMapper modelMapper; // Робимо заглушку для мапера
+    private ModelMapper modelMapper;
 
     @InjectMocks
-    private BookServiceImpl bookService; // Сервіс, який ми реально тестуємо
+    private BookServiceImpl bookService;
 
     private Book book;
     private BookDTO bookDTO;
@@ -44,35 +45,14 @@ class BookServiceImplTest {
         book.setId(1L);
         book.setName("Test Book");
         book.setPrice(BigDecimal.valueOf(150.0));
+        book.setStockQuantity(10);
 
         bookDTO = new BookDTO();
         bookDTO.setName("Test Book");
         bookDTO.setPrice(BigDecimal.valueOf(150.0));
+        bookDTO.setStockQuantity(10);
     }
 
-    @Test
-    void getAllBooks_ShouldReturnPageOfBooks() {
-        // 1. Налаштовуємо вхідні дані для пагінації
-        Pageable pageable = PageRequest.of(0, 10);
-        String keyword = "Test";
-        Page<Book> bookPage = new PageImpl<>(List.of(book));
-
-        // 2. Налаштовуємо мок-репозиторій на виклик методу з параметрами
-        // Оскільки в коді сервісу ви викликаєте findByNameContainingIgnoreCase, коли keyword не порожній:
-        when(bookRepository.findByNameContainingIgnoreCase(keyword, pageable)).thenReturn(bookPage);
-        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
-
-        // 3. Викликаємо метод сервісу з ПРАВИЛЬНИМИ аргументами
-        Page<BookDTO> result = bookService.getAllBooks(pageable, keyword);
-
-        // 4. Перевіряємо результат
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Test Book", result.getContent().get(0).getName());
-
-        // Перевіряємо, чи викликався саме той метод репозиторію, який ми очікували
-        verify(bookRepository, times(1)).findByNameContainingIgnoreCase(keyword, pageable);
-    }
 
     @Test
     void getBookByName_ShouldReturnBook_WhenBookExists() {
@@ -93,6 +73,7 @@ class BookServiceImplTest {
         verify(bookRepository, times(1)).findByName("Unknown");
     }
 
+
     @Test
     void addBook_ShouldSaveAndReturnBook() {
         when(modelMapper.map(bookDTO, Book.class)).thenReturn(book);
@@ -106,19 +87,199 @@ class BookServiceImplTest {
         verify(bookRepository, times(1)).save(book);
     }
 
-    @Test
-    void deleteBookByName_ShouldCallRepositoryDelete() {
-        // 1. Додаємо цю строчку, щоб пройти перевірку в сервісі
-        when(bookRepository.existsByName("Test Book")).thenReturn(true);
 
-        // 2. Імітуємо успішне видалення
+    @Test
+    void updateBookByName_ShouldUpdateAndReturnBook_WhenExists() {
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        bookDTO.setAuthor("New Author");
+
+        BookDTO result = bookService.updateBookByName("Test Book", bookDTO);
+
+        assertNotNull(result);
+        assertEquals("Test Book", result.getName());
+        verify(bookRepository, times(1)).save(book);
+    }
+
+    @Test
+    void updateBookByName_ShouldThrowNotFoundException_WhenDoesNotExist() {
+        when(bookRepository.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> bookService.updateBookByName("Unknown", bookDTO));
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void updateBook_ShouldCallUpdateBookByName() {
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        bookService.updateBook("Test Book", bookDTO);
+
+        verify(bookRepository, times(1)).save(book);
+    }
+
+
+    @Test
+    void deleteBookByName_ShouldCallRepositoryDelete_WhenExists() {
+        when(bookRepository.existsByName("Test Book")).thenReturn(true);
         doNothing().when(bookRepository).deleteByName("Test Book");
 
-        // 3. Викликаємо метод
         bookService.deleteBookByName("Test Book");
 
-        // 4. Перевіряємо, чи викликався метод видалення в репозиторії
         verify(bookRepository, times(1)).deleteByName("Test Book");
-        verify(bookRepository, times(1)).existsByName("Test Book");
+    }
+
+    @Test
+    void deleteBookByName_ShouldThrowNotFoundException_WhenDoesNotExist() {
+        when(bookRepository.existsByName("Unknown")).thenReturn(false);
+
+        assertThrows(NotFoundException.class, () -> bookService.deleteBookByName("Unknown"));
+        verify(bookRepository, never()).deleteByName(anyString());
+    }
+
+
+    @Test
+    void getAllBooks_WithKeyword_ShouldReturnFilteredPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findByNameContainingIgnoreCase("Test", pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getAllBooks(pageable, "Test");
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findByNameContainingIgnoreCase("Test", pageable);
+    }
+
+    @Test
+    void getAllBooks_WithoutKeyword_ShouldReturnAllBooksPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findAll(pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getAllBooks(pageable, null);
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findAll(pageable);
+    }
+
+    @Test
+    void getAllBooks_WithEmptyKeyword_ShouldReturnAllBooksPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findAll(pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getAllBooks(pageable, "");
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findAll(pageable);
+    }
+
+
+    @Test
+    void getFilteredAndSortedBooks_WithGenre_ShouldFilterByGenre() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findByGenre("Fantasy", pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getFilteredAndSortedBooks(null, "Fantasy", null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findByGenre("Fantasy", pageable);
+    }
+
+    @Test
+    void getFilteredAndSortedBooks_WithKeywordOnly_ShouldFilterByKeyword() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findByNameContainingIgnoreCase("Test", pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getFilteredAndSortedBooks("Test", "", null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findByNameContainingIgnoreCase("Test", pageable);
+    }
+
+    @Test
+    void getFilteredAndSortedBooks_WithoutFilters_ShouldReturnAll() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Book> bookPage = new PageImpl<>(List.of(book));
+
+        when(bookRepository.findAll(pageable)).thenReturn(bookPage);
+        when(modelMapper.map(book, BookDTO.class)).thenReturn(bookDTO);
+
+        Page<BookDTO> result = bookService.getFilteredAndSortedBooks(null, null, null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(bookRepository, times(1)).findAll(pageable);
+    }
+
+
+    @Test
+    void getAllUniqueGenres_ShouldReturnSortedAndDistinctGenres() {
+        Book b1 = new Book(); b1.setGenre("Sci-Fi");
+        Book b2 = new Book(); b2.setGenre("Fantasy");
+        Book b3 = new Book(); b3.setGenre("Sci-Fi");
+        Book b4 = new Book(); b4.setGenre("  ");
+        Book b5 = new Book(); b5.setGenre(null);
+
+        when(bookRepository.findAll()).thenReturn(List.of(b1, b2, b3, b4, b5));
+
+        List<String> result = bookService.getAllUniqueGenres();
+
+        assertEquals(2, result.size());
+        assertEquals("Fantasy", result.get(0));
+        assertEquals("Sci-Fi", result.get(1));
+    }
+
+
+    @Test
+    void updateStock_ShouldIncreaseStock_WhenBookExists() {
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+
+        bookService.updateStock("Test Book", 5);
+
+        assertEquals(15, book.getStockQuantity());
+        verify(bookRepository, times(1)).save(book);
+    }
+
+    @Test
+    void updateStock_ShouldHandleNullStock_WhenBookExists() {
+        book.setStockQuantity(null);
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+
+        bookService.updateStock("Test Book", 5);
+
+        assertEquals(5, book.getStockQuantity());
+        verify(bookRepository, times(1)).save(book);
+    }
+
+    @Test
+    void updateStock_ShouldThrowNotFoundException_WhenBookDoesNotExist() {
+        when(bookRepository.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> bookService.updateStock("Unknown", 5));
+        verify(bookRepository, never()).save(any(Book.class));
+    }
+
+    @Test
+    void updateStock_ShouldThrowOutOfStockException_WhenQuantityBecomesNegative() {
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+
+        assertThrows(OutOfStockException.class, () -> bookService.updateStock("Test Book", -15));
+        verify(bookRepository, never()).save(any(Book.class));
     }
 }

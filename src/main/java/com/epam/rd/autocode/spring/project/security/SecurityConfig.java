@@ -1,7 +1,8 @@
-package com.epam.rd.autocode.spring.project.conf;
+package com.epam.rd.autocode.spring.project.security;
 
-import com.epam.rd.autocode.spring.project.security.JwtFilter;
+import com.epam.rd.autocode.spring.project.security.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

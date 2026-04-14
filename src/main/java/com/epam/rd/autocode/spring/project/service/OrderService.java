@@ -22,4 +22,6 @@ public interface OrderService {
     void shipOrder(Long id, String employeeEmail);
 
     List<OrderDTO> getNewShippedOrders(String clientEmail);
+
+    Page<OrderDTO> getAllOrders(String search, Pageable pageable);
 }

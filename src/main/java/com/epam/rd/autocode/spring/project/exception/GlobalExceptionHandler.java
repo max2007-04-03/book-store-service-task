@@ -1,6 +1,7 @@
 package com.epam.rd.autocode.spring.project.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
         return "redirect:/home";
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, AlreadyExistException.class})
+    @ExceptionHandler({IllegalArgumentException.class, AlreadyExistException.class, InvalidProfileDataException.class, InvalidBookDataException.class})
     public String handleValidation(RuntimeException ex, RedirectAttributes ra, HttpServletRequest request) {
         ra.addFlashAttribute("error", ex.getMessage());
         String referer = request.getHeader("Referer");
@@ -54,4 +55,6 @@ public class GlobalExceptionHandler {
         String referer = request.getHeader("Referer");
         return "redirect:" + (referer != null ? referer : "/home");
     }
+
+
 }

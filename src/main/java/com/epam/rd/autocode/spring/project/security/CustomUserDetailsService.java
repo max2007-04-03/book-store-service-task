@@ -1,4 +1,4 @@
-package com.epam.rd.autocode.spring.project.service;
+package com.epam.rd.autocode.spring.project.security;
 
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.model.Employee;

@@ -26,16 +26,4 @@ public class Client extends User {
         this.balance = (balance == null) ? BigDecimal.ZERO : balance;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Client)) return false;
-        Client client = (Client) o;
-        return getId() != null && getId().equals(client.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }
