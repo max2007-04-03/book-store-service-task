@@ -34,29 +34,32 @@ public class JwtFilter extends OncePerRequestFilter {
             for (Cookie cookie : request.getCookies()) {
                 if ("JWT".equals(cookie.getName())) {
                     token = cookie.getValue();
+                    break;
                 }
             }
         }
 
-        if (token != null) {
+        if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 username = jwtUtil.extractUsername(token);
+
+                if (username != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    if (jwtUtil.isTokenValid(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                }
             } catch (Exception e) {
-
+                logger.error("JWT Authentication failed: " + e.getMessage());
             }
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (jwtUtil.isTokenValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        }
+        // 3. Йдемо далі по ланцюжку фільтрів
         chain.doFilter(request, response);
     }
 }
