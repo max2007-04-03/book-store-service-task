@@ -3,6 +3,7 @@ package com.epam.rd.autocode.spring.project.service.impl;
 import com.epam.rd.autocode.spring.project.model.CartItem;
 import com.epam.rd.autocode.spring.project.repo.CartRepository;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper; // Додано імпорт
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.util.List;
 public class CartService {
 
     private final CartRepository cartRepository;
+    private final ModelMapper modelMapper;
 
     public List<CartItem> getCartItems(String email) {
         return cartRepository.findByClientEmail(email);

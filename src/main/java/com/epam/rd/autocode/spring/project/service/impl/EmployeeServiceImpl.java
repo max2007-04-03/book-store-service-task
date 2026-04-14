@@ -9,12 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder; // Додано імпорт
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,14 +51,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee existingEmployee = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Працівника не знайдено"));
 
-        existingEmployee.setName(employeeDTO.getName());
+        String currentPassword = existingEmployee.getPassword();
+
+        modelMapper.map(employeeDTO, existingEmployee);
 
         if (employeeDTO.getPassword() != null && !employeeDTO.getPassword().isEmpty()) {
             existingEmployee.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));
+        } else {
+            existingEmployee.setPassword(currentPassword);
         }
-
-        existingEmployee.setBirthDate(employeeDTO.getBirthDate());
-        existingEmployee.setPhone(employeeDTO.getPhone());
 
         Employee updatedEmployee = employeeRepository.save(existingEmployee);
         return modelMapper.map(updatedEmployee, EmployeeDTO.class);

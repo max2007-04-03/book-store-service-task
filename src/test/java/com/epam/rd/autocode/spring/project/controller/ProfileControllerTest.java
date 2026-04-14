@@ -60,7 +60,6 @@ class ProfileControllerTest {
     private EmployeeRepository employeeRepository;
 
 
-
     @Test
     void testShowProfile() throws Exception {
         ClientDTO mockClient = new ClientDTO();
@@ -73,7 +72,6 @@ class ProfileControllerTest {
                 .andExpect(view().name("client-profile"))
                 .andExpect(model().attributeExists("client"));
     }
-
 
     @Test
     void testUpdateProfile_EmailChanged() throws Exception {
@@ -122,7 +120,6 @@ class ProfileControllerTest {
         verify(clientService, never()).updateClientProfile(anyString(), any(ClientDTO.class));
     }
 
-
     @Test
     void testTopUpBalance_Success() throws Exception {
         mockMvc.perform(post("/profile/topup")
@@ -157,7 +154,6 @@ class ProfileControllerTest {
 
         verify(clientService, never()).addBalance(anyString(), any(BigDecimal.class));
     }
-
 
     @Test
     void testTopUpBalance_ShouldRedirectWithError_WhenAmountIsNull() {

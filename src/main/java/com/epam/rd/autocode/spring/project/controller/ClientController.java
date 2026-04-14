@@ -89,7 +89,7 @@ public class ClientController {
     @GetMapping("/{email}/cart")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public String getClientCart(@PathVariable String email, Model model) {
-        log.debug("▶ Працівник переглядає кошик клієнта: {}", email);
+        log.debug(" Працівник переглядає кошик клієнта: {}", email);
         model.addAttribute("clientEmail", email);
         model.addAttribute("cartItems", cartService.getCartItems(email));
         return "clients/cart-view";

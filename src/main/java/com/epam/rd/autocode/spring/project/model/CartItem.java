@@ -24,16 +24,4 @@ public class CartItem {
         return price != null ? price.multiply(new BigDecimal(quantity)) : BigDecimal.ZERO;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CartItem)) return false;
-        return id != null && id.equals(((CartItem) o).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
-
 }

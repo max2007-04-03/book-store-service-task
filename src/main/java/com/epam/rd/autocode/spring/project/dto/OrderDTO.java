@@ -15,14 +15,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderDTO {
+
     private Long id;
+
     private String orderNumber;
+
     private OrderStatus status;
 
     private String clientEmail;
+
     private String employeeEmail;
+
     private LocalDateTime orderDate;
+
     private BigDecimal price;
+
     private List<BookItemDTO> bookItems;
+
     private boolean notified;
 }

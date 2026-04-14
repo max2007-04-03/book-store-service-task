@@ -22,7 +22,7 @@ public class HomeController {
 
     @GetMapping({"/", "/home"})
     public String home(Model model, Principal principal) {
-        log.debug("▶️ Запит головної сторінки (Home)");
+        log.debug(" Запит головної сторінки (Home)");
 
         if (principal != null) {
             String email = principal.getName();

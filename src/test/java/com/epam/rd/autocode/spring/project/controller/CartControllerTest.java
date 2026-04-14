@@ -63,7 +63,6 @@ class CartControllerTest {
                 .andExpect(model().attributeDoesNotExist("cartTotal"));
     }
 
-
     @Test
     @WithMockUser(username = "test@user.com")
     void testAddToCartSuccess_WithCleanReferer() throws Exception {
@@ -179,7 +178,6 @@ class CartControllerTest {
 
         verify(cartService, never()).addItemToDatabaseCart(anyString(), anyString(), anyInt(), any());
     }
-
 
     @Test
     @WithMockUser(username = "test@user.com")

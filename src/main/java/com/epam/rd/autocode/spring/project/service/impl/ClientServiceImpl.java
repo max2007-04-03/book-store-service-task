@@ -15,9 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class ClientServiceImpl implements ClientService {
@@ -54,9 +51,7 @@ public class ClientServiceImpl implements ClientService {
         Client existingClient = clientRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Клієнта не знайдено"));
 
-        existingClient.setName(clientDTO.getName());
-        existingClient.setPassword(clientDTO.getPassword());
-        existingClient.setBalance(clientDTO.getBalance());
+        modelMapper.map(clientDTO, existingClient);
 
         Client updatedClient = clientRepository.save(existingClient);
         return modelMapper.map(updatedClient, ClientDTO.class);
@@ -86,10 +81,8 @@ public class ClientServiceImpl implements ClientService {
             }
         }
 
-        client.setName(updatedData.getName());
-        client.setEmail(updatedData.getEmail());
-        client.setPhone(updatedData.getPhone());
-        client.setBirthDate(updatedData.getBirthDate());
+        modelMapper.map(updatedData, client);
+
         clientRepository.save(client);
     }
 
@@ -104,10 +97,8 @@ public class ClientServiceImpl implements ClientService {
                 .orElseThrow(() -> new RuntimeException("Клієнта не знайдено"));
 
         BigDecimal currentBalance = client.getBalance() != null ? client.getBalance() : BigDecimal.ZERO;
-
         client.setBalance(currentBalance.add(amount));
 
         clientRepository.save(client);
     }
-
 }

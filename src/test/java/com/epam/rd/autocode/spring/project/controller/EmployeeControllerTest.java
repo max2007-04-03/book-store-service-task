@@ -57,7 +57,6 @@ class EmployeeControllerTest {
                 .andExpect(model().attributeExists("employeePage", "currentPage", "totalPages", "employees"));
     }
 
-
     @Test
     @WithMockUser(roles = "EMPLOYEE")
     void getEmployeeDetails_ShouldReturnDetailView() throws Exception {
@@ -69,7 +68,6 @@ class EmployeeControllerTest {
                 .andExpect(view().name("employees/detail"))
                 .andExpect(model().attributeExists("employee"));
     }
-
 
     @Test
     @WithMockUser(username = "emp@store.com", roles = "EMPLOYEE")
@@ -97,7 +95,6 @@ class EmployeeControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/employees"));
     }
-
 
     @Test
     @WithMockUser(roles = "EMPLOYEE")
@@ -165,7 +162,6 @@ class EmployeeControllerTest {
         mockMvc.perform(post("/employees/emp@store.com/update").with(csrf()).param("birthDate", oldDate))
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidProfileDataException));
     }
-
 
     @Test
     @WithMockUser(username = "admin@store.com", roles = "EMPLOYEE")

@@ -23,12 +23,11 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final ModelMapper modelMapper;
 
-
     @Override
     public BookDTO getBookByName(String name) {
         Book book = bookRepository.findByName(name)
                 .orElseThrow(() -> new NotFoundException("Книгу з назвою '" + name + "' не знайдено"));
-        return modelMapper.map(book, BookDTO.class);
+        return convertToDTO(book);
     }
 
     @Override
@@ -36,7 +35,7 @@ public class BookServiceImpl implements BookService {
     public BookDTO addBook(BookDTO bookDTO) {
         Book book = modelMapper.map(bookDTO, Book.class);
         Book savedBook = bookRepository.save(book);
-        return modelMapper.map(savedBook, BookDTO.class);
+        return convertToDTO(savedBook);
     }
 
     @Override
@@ -45,19 +44,10 @@ public class BookServiceImpl implements BookService {
         Book existingBook = bookRepository.findByName(name)
                 .orElseThrow(() -> new NotFoundException("Книгу з назвою '" + name + "' не знайдено"));
 
-        existingBook.setAuthor(bookDTO.getAuthor());
-        existingBook.setPrice(bookDTO.getPrice());
-        existingBook.setGenre(bookDTO.getGenre());
-        existingBook.setPages(bookDTO.getPages());
-        existingBook.setPublicationDate(bookDTO.getPublicationDate());
-        existingBook.setLanguage(bookDTO.getLanguage());
-        existingBook.setAgeGroup(bookDTO.getAgeGroup());
-        existingBook.setCharacteristics(bookDTO.getCharacteristics());
-        existingBook.setDescription(bookDTO.getDescription());
-        existingBook.setStockQuantity(bookDTO.getStockQuantity());
+        modelMapper.map(bookDTO, existingBook);
 
         Book updatedBook = bookRepository.save(existingBook);
-        return modelMapper.map(updatedBook, BookDTO.class);
+        return convertToDTO(updatedBook);
     }
 
     @Override
@@ -83,7 +73,7 @@ public class BookServiceImpl implements BookService {
         } else {
             books = bookRepository.findAll(pageable);
         }
-        return books.map(book -> modelMapper.map(book, BookDTO.class));
+        return books.map(this::convertToDTO);
     }
 
     @Override

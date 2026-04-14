@@ -56,16 +56,5 @@ public class Book {
 
     private Integer stockQuantity;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Book)) return false;
-        return id != null && id.equals(((Book) o).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 
 }

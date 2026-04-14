@@ -20,10 +20,6 @@ public class BookDTO {
     @NotBlank(message = "Назва книги не може бути порожньою")
     private String name;
 
-    private String genre;
-
-    private AgeGroup ageGroup;
-
     @NotNull(message = "Ціна є обов'язковою")
     @Positive(message = "Ціна має бути більшою за нуль")
     private BigDecimal price;
@@ -37,14 +33,16 @@ public class BookDTO {
     @Positive(message = "Кількість сторінок має бути більшою за нуль")
     private Integer pages;
 
+    @Min(value = 0, message = "Кількість на складі не може бути від'ємною")
+    private Integer stockQuantity;
+
+    private String genre;
+
+    private AgeGroup ageGroup;
+
     private String characteristics;
 
     private String description;
 
     private Language language;
-
-    @Min(value = 0, message = "Кількість на складі не може бути від'ємною")
-    private Integer stockQuantity;
-
-
 }

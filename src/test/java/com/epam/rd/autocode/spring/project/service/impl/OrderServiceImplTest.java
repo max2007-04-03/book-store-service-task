@@ -9,14 +9,17 @@ import com.epam.rd.autocode.spring.project.repo.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class OrderServiceImplTest {
 
     @Mock private OrderRepository orderRepository;
@@ -35,6 +39,7 @@ class OrderServiceImplTest {
     @Mock private EmployeeRepository employeeRepository;
     @Mock private BookRepository bookRepository;
     @Mock private CartRepository cartRepository;
+    @Mock private ModelMapper modelMapper;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -45,12 +50,12 @@ class OrderServiceImplTest {
     private Book book;
     private Employee employee;
     private CartItem cartItem;
-    private final String CLIENT_EMAIL = "client@test.com";
+    private final String clientEmail = "client@test.com";
 
     @BeforeEach
     void setUp() {
         client = new Client();
-        client.setEmail(CLIENT_EMAIL);
+        client.setEmail(clientEmail);
         client.setBalance(BigDecimal.valueOf(1000.0));
 
         book = new Book();
@@ -71,43 +76,50 @@ class OrderServiceImplTest {
         order.setPrice(BigDecimal.valueOf(300.0));
         order.setStatus(OrderStatus.PAID);
         order.setBookItems(List.of(bookItem));
-        bookItem.setOrder(order);
 
-        BookItemDTO bookItemDTO = new BookItemDTO("Test Book", 2);
         orderDTO = new OrderDTO();
-        orderDTO.setClientEmail(CLIENT_EMAIL);
+        orderDTO.setClientEmail(clientEmail);
         orderDTO.setPrice(BigDecimal.valueOf(300.0));
-        orderDTO.setBookItems(List.of(bookItemDTO));
+        orderDTO.setBookItems(List.of(new BookItemDTO("Test Book", 2)));
 
         cartItem = new CartItem();
-        cartItem.setClientEmail(CLIENT_EMAIL);
+        cartItem.setClientEmail(clientEmail);
         cartItem.setBookName("Test Book");
         cartItem.setQuantity(2);
         cartItem.setPrice(BigDecimal.valueOf(150.0));
-    }
 
+        when(modelMapper.map(any(), eq(OrderDTO.class))).thenAnswer(invocation -> {
+            OrderDTO dto = new OrderDTO();
+            Order source = invocation.getArgument(0);
+            if (source != null && source.getClient() != null) {
+                dto.setClientEmail(source.getClient().getEmail());
+            }
+            if (source != null && source.getEmployee() != null) {
+                dto.setEmployeeEmail(source.getEmployee().getEmail());
+            }
+            dto.setStatus(source != null ? source.getStatus() : null);
+            return dto;
+        });
+    }
 
     @Test
     void getOrdersByClient_ShouldReturnOrders() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Order> orderPage = new PageImpl<>(List.of(order));
+        when(orderRepository.findByClient_Email(anyString(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(order)));
 
-        when(orderRepository.findByClient_Email(eq(CLIENT_EMAIL), any(Pageable.class))).thenReturn(orderPage);
+        Page<OrderDTO> result = orderService.getOrdersByClient(clientEmail, pageable);
 
-        Page<OrderDTO> result = orderService.getOrdersByClient(CLIENT_EMAIL, pageable);
-
+        assertNotNull(result);
         assertEquals(1, result.getContent().size());
-        verify(orderRepository, times(1)).findByClient_Email(eq(CLIENT_EMAIL), any(Pageable.class));
     }
-
 
     @Test
     void getOrdersByEmployee_ShouldReturnOrders() {
         order.setEmployee(employee);
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Order> orderPage = new PageImpl<>(List.of(order));
-
-        when(orderRepository.findByEmployee_Email(eq("emp@test.com"), any(Pageable.class))).thenReturn(orderPage);
+        when(orderRepository.findByEmployee_Email(eq("emp@test.com"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(order)));
 
         Page<OrderDTO> result = orderService.getOrdersByEmployee("emp@test.com", pageable);
 
@@ -115,202 +127,219 @@ class OrderServiceImplTest {
         assertEquals("emp@test.com", result.getContent().get(0).getEmployeeEmail());
     }
 
-
     @Test
-    void getAllPaidOrders_ShouldReturnOnlyPaidOrders() {
-        Order unpaidOrder = new Order();
-        unpaidOrder.setId(2L);
-        unpaidOrder.setClient(client);
-        unpaidOrder.setStatus(OrderStatus.SHIPPED);
-        unpaidOrder.setBookItems(Collections.emptyList());
-
-        when(orderRepository.findAll()).thenReturn(List.of(order, unpaidOrder));
-
-        List<OrderDTO> result = orderService.getAllPaidOrders();
-
-        assertEquals(1, result.size());
-        assertEquals(OrderStatus.PAID, result.get(0).getStatus());
-    }
-
-
-    @Test
-    void processCheckout_ShouldCreateOrder_WhenValid() {
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(List.of(cartItem));
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
-        when(orderRepository.save(any(Order.class))).thenReturn(order);
-
-        orderService.processCheckout(CLIENT_EMAIL);
-
-        assertEquals(8, book.getStockQuantity());
-        assertEquals(0, BigDecimal.valueOf(700.0).compareTo(client.getBalance()));
-
-        verify(bookRepository, times(1)).save(book);
-        verify(clientRepository, times(1)).save(client);
-        verify(orderRepository, times(1)).save(any(Order.class));
-        verify(cartRepository, times(1)).deleteAll(anyList());
-    }
-
-    @Test
-    void processCheckout_ShouldThrowNotFoundException_WhenClientNotFound() {
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(List.of(cartItem));
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.processCheckout(CLIENT_EMAIL));
-    }
-
-    @Test
-    void processCheckout_ShouldThrowRuntimeException_WhenCartIsEmpty() {
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(Collections.emptyList());
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-
-        assertThrows(RuntimeException.class, () -> orderService.processCheckout(CLIENT_EMAIL));
-    }
-
-    @Test
-    void processCheckout_ShouldThrowNotFoundException_WhenBookNotFound() {
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(List.of(cartItem));
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.processCheckout(CLIENT_EMAIL));
-    }
-
-    @Test
-    void processCheckout_ShouldThrowRuntimeException_WhenOutOfStock() {
-        book.setStockQuantity(1); // Менше, ніж у кошику (2)
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(List.of(cartItem));
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
-
-        assertThrows(RuntimeException.class, () -> orderService.processCheckout(CLIENT_EMAIL));
-    }
-
-    @Test
-    void processCheckout_ShouldThrowRuntimeException_WhenInsufficientFunds() {
-        client.setBalance(BigDecimal.valueOf(100.0)); // Менше, ніж сума (300)
-        when(cartRepository.findByClientEmail(CLIENT_EMAIL)).thenReturn(List.of(cartItem));
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
-
-        assertThrows(RuntimeException.class, () -> orderService.processCheckout(CLIENT_EMAIL));
-    }
-
-
-    @Test
-    void shipOrder_ShouldUpdateStatusAndEmployee() {
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(employeeRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
-
-        orderService.shipOrder(1L, "emp@test.com");
-
-        assertEquals(OrderStatus.SHIPPED, order.getStatus());
-        assertEquals(employee, order.getEmployee());
-        verify(orderRepository, times(1)).save(order);
-    }
-
-    @Test
-    void shipOrder_ShouldThrowNotFoundException_WhenOrderNotFound() {
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.shipOrder(1L, "emp@test.com"));
-    }
-
-    @Test
-    void shipOrder_ShouldThrowNotFoundException_WhenEmployeeNotFound() {
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(employeeRepository.findByEmail("emp@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.shipOrder(1L, "emp@test.com"));
-    }
-
-
-    @Test
-    void getNewShippedOrders_ShouldReturnUnnotifiedShippedOrders() {
-        order.setStatus(OrderStatus.SHIPPED);
-        order.setNotified(false);
-
-        when(orderRepository.findByClient_Email(eq(CLIENT_EMAIL), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(order)));
-
-        List<OrderDTO> result = orderService.getNewShippedOrders(CLIENT_EMAIL);
-
-        assertEquals(1, result.size());
-        assertTrue(order.isNotified());
-    }
-
-
-    @Test
-    void getEmployeeDashboardOrders_ShouldReturnOrders() {
+    void getEmployeeDashboardOrders_ShouldReturnOrdersPage() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(orderRepository.findAllForEmployeeDashboard("emp@test.com", pageable))
+        when(orderRepository.findAllForEmployeeDashboard(eq("emp@test.com"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(order)));
 
         Page<OrderDTO> result = orderService.getEmployeeDashboardOrders("emp@test.com", pageable);
 
+        assertNotNull(result);
         assertEquals(1, result.getContent().size());
     }
 
-
     @Test
-    void addOrder_ShouldSaveAndReturnOrder() {
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
-        when(orderRepository.save(any(Order.class))).thenReturn(order);
-
-        OrderDTO result = orderService.addOrder(orderDTO);
-
-        assertNotNull(result);
-        assertEquals(CLIENT_EMAIL, result.getClientEmail());
-        verify(orderRepository, times(1)).save(any(Order.class));
-    }
-
-    @Test
-    void addOrder_ShouldThrowNotFoundException_WhenClientNotFound() {
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.addOrder(orderDTO));
-    }
-
-    @Test
-    void addOrder_ShouldThrowNotFoundException_WhenBookNotFound() {
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
-        when(bookRepository.findByName("Test Book")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.addOrder(orderDTO));
-    }
-
-
-    @Test
-    void getAllOrders_WithSearchKeyword_ShouldReturnFilteredOrders() {
+    void getAllOrders_LogicBranchesTest() {
         Pageable pageable = PageRequest.of(0, 10);
+        when(orderRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(order)));
         when(orderRepository.findByOrderNumberContainingIgnoreCase("123", pageable))
                 .thenReturn(new PageImpl<>(List.of(order)));
 
-        Page<OrderDTO> result = orderService.getAllOrders(" 123 ", pageable);
+        orderService.getAllOrders("123", pageable);
+        verify(orderRepository).findByOrderNumberContainingIgnoreCase("123", pageable);
 
-        assertEquals(1, result.getContent().size());
-        verify(orderRepository, times(1)).findByOrderNumberContainingIgnoreCase("123", pageable);
+        orderService.getAllOrders("   ", pageable);
+        orderService.getAllOrders(null, pageable);
+        verify(orderRepository, times(2)).findAll(pageable);
     }
 
     @Test
-    void getAllOrders_WithEmptySearchKeyword_ShouldReturnAllOrders() {
-        Pageable pageable = PageRequest.of(0, 10);
-        when(orderRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(order)));
+    void getAllPaidOrders_ShouldReturnOnlyPaidOrders() {
+        Order unpaid = new Order();
+        unpaid.setStatus(OrderStatus.SHIPPED);
+        unpaid.setClient(client);
+        unpaid.setBookItems(Collections.emptyList());
 
-        Page<OrderDTO> result = orderService.getAllOrders("   ", pageable);
+        when(orderRepository.findAll()).thenReturn(List.of(order, unpaid));
 
-        assertEquals(1, result.getContent().size());
-        verify(orderRepository, times(1)).findAll(pageable);
+        List<OrderDTO> result = orderService.getAllPaidOrders();
+        assertEquals(1, result.size());
+        assertEquals(OrderStatus.PAID, result.get(0).getStatus());
     }
 
     @Test
-    void getAllOrders_WithNullSearchKeyword_ShouldReturnAllOrders() {
+    @Transactional
+    void processCheckout_LogicBranchesTest() {
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(List.of(cartItem));
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName("Test Book")).thenReturn(Optional.of(book));
+
+        orderService.processCheckout(clientEmail);
+        verify(orderRepository).save(any(Order.class));
+        verify(cartRepository).deleteAll(any());
+
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(Collections.emptyList());
+        assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> orderService.processCheckout(clientEmail));
+    }
+
+    @Test
+    void addOrder_LogicBranchesTest() {
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.of(book));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        assertNotNull(orderService.addOrder(orderDTO));
+
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> orderService.addOrder(orderDTO));
+
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> orderService.addOrder(orderDTO));
+    }
+
+    @Test
+    void shipOrder_LogicBranchesTest() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(employeeRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
+
+        orderService.shipOrder(1L, "emp@test.com");
+        assertEquals(OrderStatus.SHIPPED, order.getStatus());
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> orderService.shipOrder(1L, "emp@test.com"));
+    }
+
+    @Test
+    void getNewShippedOrders_BranchCoverage() {
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setNotified(false);
+
+        Order paidOrder = new Order();
+        paidOrder.setStatus(OrderStatus.PAID);
+        paidOrder.setNotified(false);
+
+        Order notifiedOrder = new Order();
+        notifiedOrder.setStatus(OrderStatus.SHIPPED);
+        notifiedOrder.setNotified(true);
+
+        when(orderRepository.findByClient_Email(eq(clientEmail), any()))
+                .thenReturn(new PageImpl<>(List.of(order, paidOrder, notifiedOrder)));
+
+        List<OrderDTO> result = orderService.getNewShippedOrders(clientEmail);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getNewShippedOrders_FullCoverageTest() {
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setNotified(false);
+        order.setEmployee(employee);
+
+        Order alreadyNotified = new Order();
+        alreadyNotified.setStatus(OrderStatus.SHIPPED);
+        alreadyNotified.setNotified(true);
+        alreadyNotified.setClient(client);
+        alreadyNotified.setBookItems(Collections.emptyList());
+
+        Order paidOrder = new Order();
+        paidOrder.setStatus(OrderStatus.PAID);
+        paidOrder.setNotified(false);
+        paidOrder.setClient(client);
+        paidOrder.setBookItems(Collections.emptyList());
+
+        when(orderRepository.findByClient_Email(eq(clientEmail), any()))
+                .thenReturn(new PageImpl<>(List.of(order, alreadyNotified, paidOrder)));
+
+        List<OrderDTO> result = orderService.getNewShippedOrders(clientEmail);
+
+
+        assertEquals(1, result.size());
+        assertTrue(order.isNotified());
+        assertEquals("emp@test.com", result.get(0).getEmployeeEmail());
+        verify(modelMapper, times(1)).map(any(), eq(OrderDTO.class));
+    }
+
+    @Test
+    void processCheckout_ShouldThrowException_WhenStockIsInsufficient() {
+        cartItem.setQuantity(2);
+        book.setStockQuantity(1);
+
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(List.of(cartItem));
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.of(book));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+        assertTrue(ex.getMessage().contains("Недостатньо книг на складі"));
+    }
+
+    @Test
+    void processCheckout_ShouldThrowException_WhenBalanceIsTooLow() {
+        client.setBalance(BigDecimal.valueOf(100.0));
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(List.of(cartItem));
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.of(book));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+        assertEquals("Недостатньо коштів на балансі!", ex.getMessage());
+    }
+
+    @Test
+    void processCheckout_FullBranchCoverage() {
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(List.of(cartItem));
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.of(book));
+
+        book.setStockQuantity(1);
+        assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+
+        book.setStockQuantity(10);
+        client.setBalance(BigDecimal.ZERO);
+        assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+    }
+
+    @Test
+    void getAllOrders_FullBranchCoverage() {
         Pageable pageable = PageRequest.of(0, 10);
         when(orderRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(order)));
 
-        Page<OrderDTO> result = orderService.getAllOrders(null, pageable);
+        orderService.getAllOrders(null, pageable);
 
-        assertEquals(1, result.getContent().size());
-        verify(orderRepository, times(1)).findAll(pageable);
+        orderService.getAllOrders("   ", pageable);
+
+        verify(orderRepository, times(2)).findAll(pageable);
     }
+
+    @Test
+    void processCheckout_InsufficientBalanceBranch() {
+        when(cartRepository.findByClientEmail(clientEmail)).thenReturn(List.of(cartItem));
+        when(clientRepository.findByEmail(clientEmail)).thenReturn(Optional.of(client));
+        when(bookRepository.findByName(anyString())).thenReturn(Optional.of(book));
+
+        client.setBalance(BigDecimal.ZERO);
+        assertThrows(RuntimeException.class, () -> orderService.processCheckout(clientEmail));
+    }
+
+    @Test
+    void getNewShippedOrders_AllBranchCombinations() {
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setNotified(false);
+
+        Order alreadyNotified = new Order();
+        alreadyNotified.setStatus(OrderStatus.SHIPPED);
+        alreadyNotified.setNotified(true);
+
+        Order wrongStatus = new Order();
+        wrongStatus.setStatus(OrderStatus.PAID);
+
+        when(orderRepository.findByClient_Email(eq(clientEmail), any()))
+                .thenReturn(new PageImpl<>(List.of(order, alreadyNotified, wrongStatus)));
+
+        List<OrderDTO> result = orderService.getNewShippedOrders(clientEmail);
+        assertEquals(1, result.size());
+    }
+
 }

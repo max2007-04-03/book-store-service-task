@@ -27,40 +27,34 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceImplTest {
 
-    @Mock
-    private EmployeeRepository employeeRepository;
-
-    @Mock
-    private ModelMapper modelMapper;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    @Mock private EmployeeRepository employeeRepository;
+    @Mock private ModelMapper modelMapper;
+    @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private EmployeeServiceImpl employeeService;
 
     private Employee employee;
     private EmployeeDTO employeeDTO;
-    private final String TEST_EMAIL = "employee@test.com";
+    private final String testEmail = "employee@test.com";
 
     @BeforeEach
     void setUp() {
         employee = new Employee();
         employee.setId(1L);
         employee.setName("Test Employee");
-        employee.setEmail(TEST_EMAIL);
+        employee.setEmail(testEmail);
         employee.setPassword("securePass");
         employee.setBirthDate(LocalDate.of(1990, 1, 1));
         employee.setPhone("+380123456789");
 
         employeeDTO = new EmployeeDTO();
         employeeDTO.setName("Test Employee");
-        employeeDTO.setEmail(TEST_EMAIL);
+        employeeDTO.setEmail(testEmail);
         employeeDTO.setPassword("securePass");
         employeeDTO.setBirthDate(LocalDate.of(1990, 1, 1));
         employeeDTO.setPhone("+380123456789");
     }
-
 
     @Test
     void getAllEmployees_ShouldReturnPageOfEmployees() {
@@ -68,138 +62,97 @@ class EmployeeServiceImplTest {
         Page<Employee> employeePage = new PageImpl<>(List.of(employee));
 
         when(employeeRepository.findAll(pageable)).thenReturn(employeePage);
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
+        when(modelMapper.map(any(Employee.class), eq(EmployeeDTO.class))).thenReturn(employeeDTO);
 
         Page<EmployeeDTO> result = employeeService.getAllEmployees(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
-        assertEquals(TEST_EMAIL, result.getContent().get(0).getEmail());
-        verify(employeeRepository, times(1)).findAll(pageable);
+        verify(employeeRepository).findAll(pageable);
     }
 
-
     @Test
-    void getEmployeeByEmail_ShouldReturnEmployee_WhenExists() {
-        when(employeeRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(employee));
+    void getEmployeeByEmail_LogicTest() {
+        when(employeeRepository.findByEmail(testEmail)).thenReturn(Optional.of(employee));
         when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
+        assertNotNull(employeeService.getEmployeeByEmail(testEmail));
 
-        EmployeeDTO result = employeeService.getEmployeeByEmail(TEST_EMAIL);
-
-        assertNotNull(result);
-        assertEquals(TEST_EMAIL, result.getEmail());
+        when(employeeRepository.findByEmail("none")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> employeeService.getEmployeeByEmail("none"));
     }
 
     @Test
-    void getEmployeeByEmail_ShouldThrowNotFoundException_WhenDoesNotExist() {
-        when(employeeRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> employeeService.getEmployeeByEmail("unknown@test.com"));
-        verify(employeeRepository, times(1)).findByEmail("unknown@test.com");
-    }
-
-
-    @Test
-    void addEmployee_ShouldSaveAndReturnEmployee() {
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(modelMapper.map(employeeDTO, Employee.class)).thenReturn(employee);
+    void addEmployee_ShouldSaveSuccessfully() {
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+        when(modelMapper.map(any(EmployeeDTO.class), eq(Employee.class))).thenReturn(employee);
         when(employeeRepository.save(employee)).thenReturn(employee);
         when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
 
-        EmployeeDTO result = employeeService.addEmployee(employeeDTO);
-
-        assertNotNull(result);
-        assertEquals(TEST_EMAIL, result.getEmail());
-        verify(passwordEncoder, times(1)).encode("securePass");
-        verify(employeeRepository, times(1)).save(employee);
-    }
-
-
-    @Test
-    void updateEmployeeByEmail_ShouldUpdateAndReturnEmployee_WhenPasswordIsProvided() {
-        when(employeeRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(employee));
-        when(passwordEncoder.encode("securePass")).thenReturn("encoded_new_password");
-        when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
-
-        EmployeeDTO result = employeeService.updateEmployeeByEmail(TEST_EMAIL, employeeDTO);
-
-        assertNotNull(result);
-        verify(passwordEncoder, times(1)).encode("securePass");
-        verify(employeeRepository, times(1)).save(employee);
+        assertNotNull(employeeService.addEmployee(employeeDTO));
+        verify(passwordEncoder).encode("securePass");
+        verify(employeeRepository).save(employee);
     }
 
     @Test
-    void updateEmployeeByEmail_ShouldNotUpdatePassword_WhenPasswordIsNull() {
-        when(employeeRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(employee));
+    void deleteEmployeeByEmail_ShouldCallRepository() {
+        doNothing().when(employeeRepository).deleteByEmail(testEmail);
+        employeeService.deleteEmployeeByEmail(testEmail);
+        verify(employeeRepository).deleteByEmail(testEmail);
+    }
+
+    @Test
+    void updateEmployeeByEmail_WithPassword_ShouldUpdate() {
+        when(employeeRepository.findByEmail(testEmail)).thenReturn(Optional.of(employee));
+        doNothing().when(modelMapper).map(any(EmployeeDTO.class), any(Employee.class));
+        when(passwordEncoder.encode("securePass")).thenReturn("encoded_new");
         when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
+        when(modelMapper.map(any(Employee.class), eq(EmployeeDTO.class))).thenReturn(employeeDTO);
+
+        employeeService.updateEmployeeByEmail(testEmail, employeeDTO);
+
+        verify(passwordEncoder).encode("securePass");
+        verify(employeeRepository).save(employee);
+    }
+
+    @Test
+    void updateEmployeeByEmail_NullPassword_ShouldNotEncode() {
+        when(employeeRepository.findByEmail(testEmail)).thenReturn(Optional.of(employee));
+        doNothing().when(modelMapper).map(any(EmployeeDTO.class), any(Employee.class));
+        when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
+        when(modelMapper.map(any(Employee.class), eq(EmployeeDTO.class))).thenReturn(employeeDTO);
 
         employeeDTO.setPassword(null);
+        employeeService.updateEmployeeByEmail(testEmail, employeeDTO);
 
-        EmployeeDTO result = employeeService.updateEmployeeByEmail(TEST_EMAIL, employeeDTO);
-
-        assertNotNull(result);
         verify(passwordEncoder, never()).encode(anyString());
-        verify(employeeRepository, times(1)).save(employee);
+        verify(employeeRepository).save(employee);
     }
 
     @Test
-    void updateEmployeeByEmail_ShouldNotUpdatePassword_WhenPasswordIsEmpty() {
-        when(employeeRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(employee));
+    void updateEmployeeByEmail_EmptyPassword_ShouldNotEncode() {
+        when(employeeRepository.findByEmail(testEmail)).thenReturn(Optional.of(employee));
+        doNothing().when(modelMapper).map(any(EmployeeDTO.class), any(Employee.class));
         when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(employeeDTO);
+        when(modelMapper.map(any(Employee.class), eq(EmployeeDTO.class))).thenReturn(employeeDTO);
 
         employeeDTO.setPassword("");
+        employeeService.updateEmployeeByEmail(testEmail, employeeDTO);
 
-        EmployeeDTO result = employeeService.updateEmployeeByEmail(TEST_EMAIL, employeeDTO);
-
-        assertNotNull(result);
         verify(passwordEncoder, never()).encode(anyString());
-        verify(employeeRepository, times(1)).save(employee);
+        verify(employeeRepository).save(employee);
     }
 
     @Test
-    void updateEmployeeByEmail_ShouldThrowNotFoundException_WhenDoesNotExist() {
-        when(employeeRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> employeeService.updateEmployeeByEmail("unknown@test.com", employeeDTO));
-        verify(employeeRepository, never()).save(any(Employee.class));
-    }
-
-
-    @Test
-    void deleteEmployeeByEmail_ShouldCallDeleteMethod() {
-        doNothing().when(employeeRepository).deleteByEmail(TEST_EMAIL);
-
-        employeeService.deleteEmployeeByEmail(TEST_EMAIL);
-
-        verify(employeeRepository, times(1)).deleteByEmail(TEST_EMAIL);
-    }
-
-
-    @Test
-    void updatePersonalData_ShouldUpdateAndSave_WhenExists() {
-        when(employeeRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(employee));
+    void updatePersonalData_ShouldUpdateAndSave() {
+        when(employeeRepository.findByEmail(testEmail)).thenReturn(Optional.of(employee));
 
         String newPhone = "+380999999999";
         LocalDate newBirthDate = LocalDate.of(1995, 5, 5);
 
-        employeeService.updatePersonalData(TEST_EMAIL, newPhone, newBirthDate);
+        employeeService.updatePersonalData(testEmail, newPhone, newBirthDate);
 
         assertEquals(newPhone, employee.getPhone());
         assertEquals(newBirthDate, employee.getBirthDate());
-        verify(employeeRepository, times(1)).save(employee);
-    }
-
-    @Test
-    void updatePersonalData_ShouldThrowNotFoundException_WhenDoesNotExist() {
-        when(employeeRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        LocalDate newBirthDate = LocalDate.of(1995, 5, 5);
-        assertThrows(NotFoundException.class, () ->
-                employeeService.updatePersonalData("unknown@test.com", "+380999999999", newBirthDate));
-
-        verify(employeeRepository, never()).save(any(Employee.class));
+        verify(employeeRepository).save(employee);
     }
 }

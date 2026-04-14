@@ -12,8 +12,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class ClientDTO {
 
-
-
     @NotBlank(message = "Пароль є обов'язковим")
     @Size(min = 6, message = "Пароль повинен містити не менше 6 символів")
     @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{6,}$",
@@ -22,7 +20,6 @@ public class ClientDTO {
 
     @NotBlank(message = "Ім'я не може бути порожнім")
     private String name;
-
 
     @PositiveOrZero(message = "Баланс не може бути від'ємним")
     private BigDecimal balance = BigDecimal.ZERO;

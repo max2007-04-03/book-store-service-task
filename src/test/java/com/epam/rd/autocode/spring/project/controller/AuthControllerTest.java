@@ -52,14 +52,12 @@ class AuthControllerTest {
     @MockBean private EmployeeRepository employeeRepository;
 
 
-
     @Test
     void testShowLoginForm() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("login"));
     }
-
 
     @Test
     void testProcessLoginSuccess() throws Exception {
@@ -131,7 +129,6 @@ class AuthControllerTest {
                 .andExpect(model().attribute("error", "Сталася внутрішня помилка сервера"));
     }
 
-
     @Test
     void testShowRegisterForm() throws Exception {
         mockMvc.perform(get("/register"))
@@ -139,8 +136,6 @@ class AuthControllerTest {
                 .andExpect(view().name("register"))
                 .andExpect(model().attributeExists("user"));
     }
-
-
 
     @Test
     void testProcessRegistrationClient() throws Exception {
@@ -218,12 +213,11 @@ class AuthControllerTest {
         verify(employeeService, never()).addEmployee(any());
     }
 
-
     @Test
     void testLogout() throws Exception {
         mockMvc.perform(post("/logout"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?logout"))
-                .andExpect(cookie().maxAge("JWT", 0)); // Перевіряємо, що кукі JWT видаляється
+                .andExpect(cookie().maxAge("JWT", 0));
     }
 }

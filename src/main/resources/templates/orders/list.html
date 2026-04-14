@@ -33,11 +33,27 @@
         .nav-link:hover, .nav-link.active {
             color: var(--primary); background: rgba(79, 70, 229, 0.1); border-left-color: var(--primary);
         }
-        .nav-link i { font-style: normal; font-size: 1.2rem; }
 
         /* Main Content */
         .main-content { flex: 1; padding: 40px 5%; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+
+        /* Search Bar */
+        .search-container {
+            display: flex; gap: 10px; margin-bottom: 25px; align-items: center;
+        }
+        .search-input {
+            flex: 0 1 300px; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--card); color: var(--text); outline: none; transition: 0.3s;
+        }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        .btn-search {
+            background: var(--primary); color: white; border: none; padding: 12px 24px;
+            border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s;
+        }
+        .btn-reset {
+            color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; margin-left: 5px;
+        }
 
         /* Table Styling */
         .table-container {
@@ -49,17 +65,18 @@
             background: rgba(79, 70, 229, 0.05); text-align: left; padding: 18px 25px;
             font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
         }
+        th a { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 5px; }
         td { padding: 20px 25px; border-top: 1px solid var(--border); font-size: 0.95rem; }
 
         .status-badge {
-            padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;
+            padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;
         }
         .status-paid { background: rgba(16, 185, 129, 0.1); color: #10B981; }
         .status-shipped { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
 
         .btn-ship {
             background: var(--primary); color: white; border: none; padding: 8px 16px;
-            border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s;
+            border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s; display: flex; align-items: center; gap: 5px;
         }
         .btn-ship:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 
@@ -80,67 +97,67 @@
 </div>
 
 <div class="main-content">
-    <<div class="header">
-    <h1 th:text="#{menu.orders}">Всі замовлення</h1>
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <div style="display: flex; gap: 10px;">
-            <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇦</a>
-            <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇸</a>
+    <div class="header">
+        <h1 th:text="#{menu.orders}">Всі замовлення</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="display: flex; gap: 10px;">
+                <a th:href="@{''(lang='uk')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇦</a>
+                <a th:href="@{''(lang='en')}" style="text-decoration: none; font-size: 1.3rem;">🇺🇸</a>
+            </div>
+            <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.4rem;">🌓</button>
         </div>
-        <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.4rem;">🌓</button>
     </div>
-</div>
 
-    <form th:action="@{/orders/employee/{email}(email=${#authentication.name})}" method="get" style="display: flex; gap: 10px; margin-bottom: 25px;">
-        <input type="hidden" name="sortBy" th:value="${sortBy}">
-        <input type="hidden" name="sortDir" th:value="${sortDir}">
-
-        <input type="text" name="search" th:value="${search}" placeholder="🔍 Пошук за # номером..."
-               style="padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); outline: none; width: 300px; font-family: inherit;">
-        <button type="submit" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">Знайти</button>
-        <a th:if="${search != null and !search.isEmpty()}" th:href="@{/orders/employee/{email}(email=${#authentication.name})}"
-           style="background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center;">Скинути</a>
+    <form class="search-container" th:action="@{/orders/employee/{email}(email=${#authentication.name})}" method="get">
+        <input type="text" name="search" th:value="${search}" class="search-input"
+               th:placeholder="#{order.search.placeholder}">
+        <button type="submit" class="btn-search" th:text="#{order.search.button}">Знайти</button>
+        <a th:if="${search != null and !search.isEmpty()}"
+           th:href="@{/orders/employee/{email}(email=${#authentication.name})}"
+           class="btn-reset" th:text="#{order.search.reset}">Скинути</a>
     </form>
 
     <div class="table-container">
         <table>
             <thead>
             <tr>
-                <th># Номер</th>
-                <th>Дата</th>
-                <th>Клієнт</th>
-                <th>Товари</th>
+                <th th:text="#{order.number}"># Номер</th>
+                <th th:text="#{order.date}">Дата</th>
+                <th th:text="#{order.client}">Клієнт</th>
+                <th th:text="#{order.items}">Товари</th>
                 <th>
-                    <a th:href="@{/orders/employee/{email}(email=${#authentication.name}, sortBy='price', sortDir=${sortBy == 'price' ? reverseSortDir : 'DESC'}, search=${search})}"
-                       style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px; text-transform: uppercase;">
-                        Сума
-                        <span th:if="${sortBy == 'price' and sortDir == 'DESC'}" style="color: var(--primary); font-size: 1rem;">▼</span>
-                        <span th:if="${sortBy == 'price' and sortDir == 'ASC'}" style="color: var(--primary); font-size: 1rem;">▲</span>
-                        <span th:if="${sortBy != 'price'}" style="opacity: 0.3; font-size: 1rem;">↕</span>
+                    <a th:href="@{/orders/employee/{email}(email=${#authentication.name}, sortBy='price', sortDir=${sortBy == 'price' ? reverseSortDir : 'DESC'}, search=${search})}">
+                        <span th:text="#{order.amount}">Сума</span>
+                        <span th:if="${sortBy == 'price' and sortDir == 'DESC'}">▼</span>
+                        <span th:if="${sortBy == 'price' and sortDir == 'ASC'}">▲</span>
                     </a>
                 </th>
-                <th>Статус</th>
-                <th>Дія</th>
+                <th th:text="#{order.status}">Статус</th>
+                <th th:text="#{order.action}">Дія</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="order : ${orders}">
-                <td style="font-weight: 600;" th:text="'#' + ${order.orderNumber}">#000000</td>
+                <td style="font-weight: 600; color: var(--primary);" th:text="'#' + ${order.orderNumber}">#000000</td>
                 <td th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}">01.01.2026</td>
                 <td th:text="${order.clientEmail}">client@mail.com</td>
                 <td>
-                    <div th:each="item : ${order.bookItems}">
-                        <span th:text="${item.bookName}">Назва</span> (x<span th:text="${item.quantity}">1</span>)
+                    <div th:each="item : ${order.bookItems}" style="margin-bottom: 4px;">
+                        <span th:text="${item.bookName}" style="font-weight: 500;">Назва</span>
+                        <span style="color: var(--muted); font-size: 0.85rem;">(x<span th:text="${item.quantity}">1</span>)</span>
                     </div>
                 </td>
                 <td class="price" th:text="${order.price} + ' ₴'">0.00 ₴</td>
                 <td>
-                        <span th:class="'status-badge ' + (${order.status.name() == 'PAID'} ? 'status-paid' : 'status-shipped')"
-                              th:text="${order.status.name() == 'PAID' ? 'Оплачено' : 'Відправлено'}">Статус</span>
+                    <span th:class="'status-badge ' + (${order.status.name() == 'PAID'} ? 'status-paid' : 'status-shipped')"
+                          th:text="${order.status.name() == 'PAID' ? #messages.msg('order.status.paid') : #messages.msg('order.status.shipped')}">
+                    </span>
                 </td>
                 <td>
                     <form th:if="${order.status.name() == 'PAID'}" th:action="@{/orders/{id}/ship(id=${order.id})}" method="post">
-                        <button type="submit" class="btn-ship">🚀 Відправити</button>
+                        <button type="submit" class="btn-ship">
+                            🚀 <span th:text="#{order.button.ship}">Відправити</span>
+                        </button>
                     </form>
                 </td>
             </tr>

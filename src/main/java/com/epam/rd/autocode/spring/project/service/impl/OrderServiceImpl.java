@@ -8,6 +8,7 @@ import com.epam.rd.autocode.spring.project.model.enums.OrderStatus;
 import com.epam.rd.autocode.spring.project.repo.*;
 import com.epam.rd.autocode.spring.project.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final EmployeeRepository employeeRepository;
     private final BookRepository bookRepository;
     private final CartRepository cartRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public Page<OrderDTO> getOrdersByClient(String clientEmail, Pageable pageable) {
@@ -169,18 +171,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderDTO mapToDTO(Order order) {
-        return OrderDTO.builder()
-                .id(order.getId())
-                .orderNumber(order.getOrderNumber())
-                .status(order.getStatus())
-                .clientEmail(order.getClient().getEmail())
-                .employeeEmail(order.getEmployee() != null ? order.getEmployee().getEmail() : null)
-                .orderDate(order.getOrderDate())
-                .price(order.getPrice())
-                .bookItems(order.getBookItems().stream()
-                        .map(item -> new BookItemDTO(item.getBook().getName(), item.getQuantity()))
-                        .collect(Collectors.toList()))
-                .build();
+        OrderDTO dto = modelMapper.map(order, OrderDTO.class);
+
+
+        dto.setClientEmail(order.getClient().getEmail());
+        if (order.getEmployee() != null) {
+            dto.setEmployeeEmail(order.getEmployee().getEmail());
+        }
+
+        dto.setBookItems(order.getBookItems().stream()
+                .map(item -> new BookItemDTO(item.getBook().getName(), item.getQuantity()))
+                .collect(Collectors.toList()));
+
+        return dto;
     }
 
     @Override

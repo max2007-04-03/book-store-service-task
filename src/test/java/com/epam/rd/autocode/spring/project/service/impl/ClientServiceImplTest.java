@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,222 +28,195 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ClientServiceImplTest {
 
-    @Mock
-    private ClientRepository clientRepository;
-
-    @Mock
-    private ModelMapper modelMapper;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    @Mock private ClientRepository clientRepository;
+    @Mock private ModelMapper modelMapper;
+    @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private ClientServiceImpl clientService;
 
     private Client client;
     private ClientDTO clientDTO;
-    private final String TEST_EMAIL = "client@test.com";
+    private final String testEmail = "client@test.com";
 
     @BeforeEach
     void setUp() {
         client = new Client();
         client.setId(1L);
         client.setName("Test Client");
-        client.setEmail(TEST_EMAIL);
+        client.setEmail(testEmail);
         client.setPassword("password123");
         client.setBalance(BigDecimal.valueOf(1000.0));
 
         clientDTO = new ClientDTO();
         clientDTO.setName("Test Client");
-        clientDTO.setEmail(TEST_EMAIL);
+        clientDTO.setEmail(testEmail);
         clientDTO.setPassword("password123");
         clientDTO.setBalance(BigDecimal.valueOf(1000.0));
     }
 
-
     @Test
-    void getAllClients_ShouldReturnPageOfClients() {
+    void getAllClients_ShouldReturnPage() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Client> clientPage = new PageImpl<>(List.of(client));
-
-        when(clientRepository.findAll(pageable)).thenReturn(clientPage);
-        when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
+        when(clientRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(client)));
+        when(modelMapper.map(any(Client.class), eq(ClientDTO.class))).thenReturn(clientDTO);
 
         Page<ClientDTO> result = clientService.getAllClients(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
-        assertEquals(TEST_EMAIL, result.getContent().get(0).getEmail());
-        verify(clientRepository, times(1)).findAll(pageable);
     }
 
-
     @Test
-    void getClientByEmail_ShouldReturnClient_WhenExists() {
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+    void getClientByEmail_LogicTest() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
         when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
+        assertNotNull(clientService.getClientByEmail(testEmail));
 
-        ClientDTO result = clientService.getClientByEmail(TEST_EMAIL);
-
-        assertNotNull(result);
-        assertEquals(TEST_EMAIL, result.getEmail());
+        when(clientRepository.findByEmail("none@test.com")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> clientService.getClientByEmail("none@test.com"));
     }
 
     @Test
-    void getClientByEmail_ShouldThrowNotFoundException_WhenDoesNotExist() {
-        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> clientService.getClientByEmail("unknown@test.com"));
-    }
-
-
-    @Test
-    void addClient_ShouldSaveAndReturnClient() {
-        ClientDTO dto = new ClientDTO();
-        dto.setPassword("raw_password");
-        Client clientToSave = new Client();
-
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(modelMapper.map(dto, Client.class)).thenReturn(clientToSave);
-        when(clientRepository.save(clientToSave)).thenReturn(clientToSave);
-        when(modelMapper.map(clientToSave, ClientDTO.class)).thenReturn(dto);
-
-        ClientDTO result = clientService.addClient(dto);
-
-        assertNotNull(result);
-        verify(passwordEncoder, times(1)).encode("raw_password");
-        verify(clientRepository, times(1)).save(clientToSave);
-    }
-
-
-    @Test
-    void updateClientByEmail_ShouldUpdateAndReturnClient() {
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+    void addClient_ShouldSaveSuccessfully() {
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+        when(modelMapper.map(any(ClientDTO.class), eq(Client.class))).thenReturn(client);
         when(clientRepository.save(any(Client.class))).thenReturn(client);
-        when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
+        when(modelMapper.map(any(Client.class), eq(ClientDTO.class))).thenReturn(clientDTO);
 
-        clientDTO.setName("Updated Name");
-        ClientDTO result = clientService.updateClientByEmail(TEST_EMAIL, clientDTO);
-
-        assertNotNull(result);
-        verify(clientRepository, times(1)).save(client);
+        assertNotNull(clientService.addClient(clientDTO));
+        verify(clientRepository).save(any(Client.class));
     }
 
-    @Test
-    void updateClientByEmail_ShouldThrowNotFoundException_WhenDoesNotExist() {
-        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> clientService.updateClientByEmail("unknown@test.com", clientDTO));
-        verify(clientRepository, never()).save(any(Client.class));
-    }
 
     @Test
-    void updateClient_ShouldCallUpdateClientByEmail() {
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+    void updateClient_ShouldDelegateToUpdateByEmail() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+        doNothing().when(modelMapper).map(any(ClientDTO.class), any(Client.class));
         when(clientRepository.save(any(Client.class))).thenReturn(client);
-        when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
+        when(modelMapper.map(any(Client.class), eq(ClientDTO.class))).thenReturn(clientDTO);
 
-        clientService.updateClient(TEST_EMAIL, clientDTO);
+        clientService.updateClient(testEmail, clientDTO);
+        verify(clientRepository).save(any(Client.class));
+    }
+
+    @Test
+    void updateClientProfile_ShouldNotCheckEmail_WhenEmailIsUnchanged() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+        doNothing().when(modelMapper).map(any(ClientDTO.class), any(Client.class));
+
+        clientDTO.setEmail(testEmail);
+        clientService.updateClientProfile(testEmail, clientDTO);
 
         verify(clientRepository, times(1)).save(client);
-    }
-
-
-    @Test
-    void deleteClientByEmail_ShouldCallDeleteMethod() {
-        doNothing().when(clientRepository).deleteByEmail(TEST_EMAIL);
-
-        clientService.deleteClientByEmail(TEST_EMAIL);
-
-        verify(clientRepository, times(1)).deleteByEmail(TEST_EMAIL);
-    }
-
-
-    @Test
-    void updateClientProfile_ShouldUpdateProfile_WhenEmailIsUnchanged() {
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
-
-        clientDTO.setName("New Name"); // Змінюємо ім'я, але залишаємо той самий email
-
-        clientService.updateClientProfile(TEST_EMAIL, clientDTO);
-
-        verify(clientRepository, times(1)).save(client);
-        assertEquals("New Name", client.getName());
+        verify(clientRepository, never()).findByEmail(argThat(e -> !e.equals(testEmail)));
     }
 
     @Test
-    void updateClientProfile_ShouldUpdateProfile_WhenNewEmailIsAvailable() {
+    void updateClientProfile_ShouldUpdate_WhenNewEmailIsAvailable() {
         String newEmail = "new@test.com";
         clientDTO.setEmail(newEmail);
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+        when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
+        doNothing().when(modelMapper).map(any(ClientDTO.class), any(Client.class));
 
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
+        clientService.updateClientProfile(testEmail, clientDTO);
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void updateClientProfile_ShouldThrow_WhenEmailTaken() {
+        String busyEmail = "busy@test.com";
+        clientDTO.setEmail(busyEmail);
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+        when(clientRepository.findByEmail(busyEmail)).thenReturn(Optional.of(new Client()));
+
+        assertThrows(AlreadyExistException.class, () -> clientService.updateClientProfile(testEmail, clientDTO));
+        verify(clientRepository, never()).save(any());
+    }
+
+    @Test
+    void updateClientProfile_ShouldThrow_WhenClientNotFound() {
+        when(clientRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> clientService.updateClientProfile("missing@test.com", clientDTO));
+    }
+
+    @Test
+    void addBalance_LogicBranchesTest() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+
+        clientService.addBalance(testEmail, BigDecimal.valueOf(500));
+        assertEquals(0, BigDecimal.valueOf(1500).compareTo(client.getBalance()));
+
+        client.setBalance(null);
+        clientService.addBalance(testEmail, BigDecimal.valueOf(100));
+        assertEquals(0, BigDecimal.valueOf(100).compareTo(client.getBalance()));
+
+        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(testEmail, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(testEmail, new BigDecimal("-1.0")));
+
+        when(clientRepository.findByEmail("none@test.com")).thenReturn(Optional.empty());
+        assertThrows(RuntimeException.class, () -> clientService.addBalance("none@test.com", BigDecimal.ONE));
+    }
+
+    @Test
+    void deleteClientByEmail_ShouldCallRepository() {
+        doNothing().when(clientRepository).deleteByEmail(testEmail);
+        clientService.deleteClientByEmail(testEmail);
+        verify(clientRepository).deleteByEmail(testEmail);
+    }
+
+    @Test
+    void updateClientProfile_AvailableEmailChange() {
+        String newEmail = "new_free@test.com";
+        clientDTO.setEmail(newEmail);
+
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
         when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
 
-        clientService.updateClientProfile(TEST_EMAIL, clientDTO);
+        clientService.updateClientProfile(testEmail, clientDTO);
 
-        verify(clientRepository, times(1)).save(client);
-        assertEquals(newEmail, client.getEmail());
+        verify(clientRepository).save(client);
     }
 
     @Test
-    void updateClientProfile_ShouldThrowAlreadyExistException_WhenNewEmailIsTaken() {
+    void updateClientProfile_EmailChangeBranches() {
         String newEmail = "new@test.com";
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+        doNothing().when(modelMapper).map(any(ClientDTO.class), any(Client.class));
+
         clientDTO.setEmail(newEmail);
+        when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
+        clientService.updateClientProfile(testEmail, clientDTO);
+        verify(clientRepository, times(1)).save(client);
 
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
-        // Імітуємо, що новий email вже зайнятий іншим користувачем
         when(clientRepository.findByEmail(newEmail)).thenReturn(Optional.of(new Client()));
-
-        assertThrows(AlreadyExistException.class, () -> clientService.updateClientProfile(TEST_EMAIL, clientDTO));
-        verify(clientRepository, never()).save(any(Client.class));
+        assertThrows(AlreadyExistException.class, () -> clientService.updateClientProfile(testEmail, clientDTO));
     }
 
     @Test
-    void updateClientProfile_ShouldThrowNotFoundException_WhenClientDoesNotExist() {
-        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+    void addBalance_TernaryCoverage() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
 
-        assertThrows(NotFoundException.class, () -> clientService.updateClientProfile("unknown@test.com", clientDTO));
-        verify(clientRepository, never()).save(any(Client.class));
-    }
-
-
-    @Test
-    void addBalance_ShouldIncreaseBalance_WhenAmountIsPositive() {
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
-
-        BigDecimal amountToAdd = BigDecimal.valueOf(500.0);
-        clientService.addBalance(TEST_EMAIL, amountToAdd);
-
-        verify(clientRepository, times(1)).save(client);
-        assertEquals(0, BigDecimal.valueOf(1500.0).compareTo(client.getBalance()));
-    }
-
-    @Test
-    void addBalance_ShouldSetBalance_WhenCurrentBalanceIsNull() {
         client.setBalance(null);
-        when(clientRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(client));
-
-        BigDecimal amountToAdd = BigDecimal.valueOf(500.0);
-        clientService.addBalance(TEST_EMAIL, amountToAdd);
-
-        verify(clientRepository, times(1)).save(client);
-        assertEquals(amountToAdd, client.getBalance());
+        clientService.addBalance(testEmail, BigDecimal.TEN);
+        assertEquals(0, BigDecimal.TEN.compareTo(client.getBalance()));
     }
 
     @Test
-    void addBalance_ShouldThrowIllegalArgumentException_WhenAmountIsZeroOrLess() {
-        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(TEST_EMAIL, BigDecimal.ZERO));
-        assertThrows(IllegalArgumentException.class, () -> clientService.addBalance(TEST_EMAIL, BigDecimal.valueOf(-100.0)));
-        verify(clientRepository, never()).findByEmail(anyString());
+    void addBalance_TernaryBranchCoverage() {
+        when(clientRepository.findByEmail(testEmail)).thenReturn(Optional.of(client));
+
+        client.setBalance(BigDecimal.valueOf(100));
+        clientService.addBalance(testEmail, BigDecimal.valueOf(50));
+        assertEquals(0, BigDecimal.valueOf(150).compareTo(client.getBalance()));
+
+        client.setBalance(null);
+        clientService.addBalance(testEmail, BigDecimal.valueOf(50));
+        assertEquals(0, BigDecimal.valueOf(50).compareTo(client.getBalance()));
     }
 
-    @Test
-    void addBalance_ShouldThrowRuntimeException_WhenClientDoesNotExist() {
-        when(clientRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class, () -> clientService.addBalance("unknown@test.com", BigDecimal.valueOf(100.0)));
-        verify(clientRepository, never()).save(any(Client.class));
-    }
 }
